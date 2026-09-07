@@ -1,0 +1,56 @@
+<div style="max-width: 500px; margin: 30px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+  <h2>📋 Registro de Cliente</h2>
+  <p style="color: #666; font-size: 0.9rem;">¡Registrate y obtené un 20% de descuento en tu primera compra!</p>
+
+  <form [formGroup]="registroForm" (ngSubmit)="registrarUsuario()" style="display: flex; flex-direction: column; gap: 12px;">
+    
+    <div>
+      <label>Correo Electrónico:</label>
+      <input type="email" formControlName="email" style="width: 100%; padding: 8px;" />
+    </div>
+
+    <div>
+      <label>Nombre:</label>
+      <input type="text" formControlName="nombre" style="width: 100%; padding: 8px;" />
+    </div>
+
+    <div>
+      <label>Apellido:</label>
+      <input type="text" formControlName="apellido" style="width: 100%; padding: 8px;" />
+    </div>
+
+    <div>
+      <label>Fecha de Nacimiento:</label>
+      <input type="date" formControlName="fechaNacimiento" style="width: 100%; padding: 8px;" />
+    </div>
+
+    <div>
+      <label>Tipo de Sangre:</label>
+      <select formControlName="tipoSangre" style="width: 100%; padding: 8px;">
+        <option value="">Seleccione...</option>
+        @for (tipo of tiposSangre; track tipo) {
+          <option [value]="tipo">{{ tipo }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label>Color de Ojos:</label>
+      <select formControlName="colorOjos" style="width: 100%; padding: 8px;">
+        <option value="">Seleccione...</option>
+        @for (color of coloresOjos; track color) {
+          <option [value]="color">{{ color }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label>Días de Vacaciones por Año:</label>
+      <input type="number" formControlName="diasVacaciones" style="width: 100%; padding: 8px;" />
+    </div>
+
+    <button type="submit" style="padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Registrarse
+    </button>
+  </form>
+</div>

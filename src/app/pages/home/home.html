@@ -1,0 +1,53 @@
+<div style="padding: 20px; font-family: sans-serif;">
+
+  <h2>🔥 Las 3 Películas Más Vendidas</h2>
+  <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+    @for (pelicula of cineService.peliculasMasVendidas(); track pelicula.id) {
+      <div style="border: 2px solid #ffc107; padding: 15px; border-radius: 8px; width: 220px; background: #fff8e1;">
+        <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" style="width: 100%; border-radius: 4px;" />
+        <h3>{{ pelicula.nombre }}</h3>
+        <p><strong>Formato:</strong> {{ pelicula.formato }} | {{ pelicula.idioma }}</p>
+        <p>⭐ Promedio: {{ obtenerDetallesResenia(pelicula.id).promedio }}</p>
+      </div>
+    }
+  </div>
+
+  <hr />
+
+  <h2>🎬 Catálogo de Películas</h2>
+  <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+    <input 
+      type="text" 
+      [(ngModel)]="busquedaTexto" 
+      placeholder="Buscar película..." 
+      style="padding: 8px; width: 250px;" 
+    />
+
+    <select [(ngModel)]="generoSeleccionado" style="padding: 8px;">
+      <option value="">Todos los géneros</option>
+      @for (genero of generosDisponibles; track genero) {
+        <option [value]="genero">{{ genero }}</option>
+      }
+    </select>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    @for (pelicula of peliculasFiltradas; track pelicula.id) {
+      <div style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 220px;">
+        <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" style="width: 100%; border-radius: 4px;" />
+        <h3>{{ pelicula.nombre }}</h3>
+        <p>{{ pelicula.sinopsis }}</p>
+        <p>⏱️ {{ pelicula.duracionMinutos }} min</p>
+        <p>🏷️ {{ pelicula.generos.join(', ') }}</p>
+        <p>⭐ Promedio: {{ obtenerDetallesResenia(pelicula.id).promedio }}</p>
+        
+        <button style="width: 100%; padding: 8px; background-color: #007bff; color: white; border: none; border-radius: 4px;">
+          Sacar Entradas
+        </button>
+      </div>
+    } @empty {
+      <p>No se encontraron películas que coincidan con la búsqueda.</p>
+    }
+  </div>
+
+</div>
