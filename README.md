@@ -1,59 +1,49 @@
-# TpCine
+# TpCine - Sistema de Gestión Cinematográfica (PWA)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.5.
+Aplicación web progresiva (PWA) desarrollada en Angular para la administración integral, venta de entradas, combos de Candy Bar y mapa de butacas en tiempo real para salas de cine.
 
-## Development server
+## Enlaces del Proyecto
+- **Repositorio GitHub:** [https://github.com/Papulucio/Tp-programacion-4-CINE](https://github.com/Papulucio/Tp-programacion-4-CINE)
+- **Aplicación en Producción (Vercel):** [https://tp-programacion-4-cine.vercel.app](https://tp-programacion-4-cine.vercel.app)
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## Arquitectura y Decisiones Técnicas
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### 1. Frontend: Angular 19+
+- **Standalone Components:** Estructura modular sin necesidad de `NgModule`, reduciendo el acoplamiento y mejorando los tiempos de carga.
+- **Signals & Reactive State:** Manejo del estado reactivo del mapa de butacas, el carrito de compras y la sesión del usuario.
+- **Service Worker & PWA:** Implementación de `@angular/service-worker` con manifiesto web (`manifest.webmanifest`) para permitir la instalación de la app como ejecutable nativo.
 
-## Code scaffolding
+### 2. Backend & Base de Datos: Supabase
+- **PostgreSQL & Row Level Security (RLS):** Persistencia de datos de usuarios, funciones, auditoría de logs y transacciones.
+- **Realtime Subscriptions:** Actualización en tiempo real de la selección de butacas entre múltiples usuarios simultáneos.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### 3. Asignación Automática de Salas
+Algoritmo en frontend/backend que valida el horario de cada función disponible garantizando que no existan solapamientos entre proyecciones en una misma sala, contemplando la duración exacta del film más 30 minutos obligatorios de sanitización e intervalo.
 
-```bash
-ng generate component component-name
-```
+---
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Funcionalidades Principales
 
-```bash
-ng generate --help
-```
+1. **Cartelera e Interacción:**
+   - Top 3 de películas más vistas.
+   - Buscador por texto y filtrado por múltiples géneros.
+   - Restricción de compra según la edad verificada del usuario.
 
-## Building
+2. **Mapa de Butacas en Tiempo Real:**
+   - Identificación visual de butacas Estándar, Adaptadas para Discapacidad (Filas J y K) y VIP (Filas R, S y T).
+   - Bloqueo de asientos seleccionados en tiempo real.
 
-To build the project run:
+3. **Candy Bar, Cupones y Fidelización:**
+   - Venta individual y combos especiales de snacks/bebidas.
+   - Descuentos dinámicos, cupón de bienvenida y cupones para mayores de 50 años.
+   - Sistema de fidelización con acumulación de 1 punto por peso consumido y catálogo de canje.
 
-```bash
-ng build
-```
+4. **Entradas PDF y Validación por QR:**
+   - Emisión automática de comprobante PDF con código QR.
+   - Módulo de escaneo para empleados con invalidación de un solo uso.
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+5. **Panel Administrativo:**
+   - Reportes de facturación exportables a PDF y Excel.
+   - Log de auditoría con registro de fecha y hora de cada acción crítica.
