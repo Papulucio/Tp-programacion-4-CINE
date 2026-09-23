@@ -1,0 +1,67 @@
+<div style="padding: 20px; max-width: 900px; margin: 0 auto; font-family: sans-serif;" *ngIf="pelicula">
+  <h2>Comprar Entradas: {{ pelicula.nombre }}</h2>
+
+  <section style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <h3>1. Selecciona la Función</h3>
+    <div *ngIf="funcionesDisponibles.length === 0" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
+      No hay funciones programadas para esta película todavía. Asigna funciones desde el panel de <a routerLink="/admin">Admin</a>.
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <button *ngFor="let f of funcionesDisponibles" 
+              (click)="seleccionarFuncion(f)" 
+              [style.background]="funcionSeleccionada?.id === f.id ? '#0056b3' : '#e0e0e0'"
+              [style.color]="funcionSeleccionada?.id === f.id ? 'white' : 'black'"
+              style="padding: 10px; border: none; border-radius: 4px; cursor: pointer;">
+        Sala {{ f.salaId }} | {{ f.dias.join(', ') }} a las {{ f.horaInicio }}hs (${{ f.precio }})
+      </button>
+    </div>
+  </section>
+
+  <section *ngIf="funcionSeleccionada" style="background: #fff; border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <h3>2. Selecciona tus Butacas (Sala {{ funcionSeleccionada.salaId }})</h3>
+    
+    <app-mapa-butacas></app-mapa-butacas>
+  </section>
+
+  <section *ngIf="funcionSeleccionada" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <h3>3. Combo Candy Bar</h3>
+    <div *ngFor="let item of productosSeleccionados; let i = index" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <span>{{ item.producto.nombre }} - ${{ item.producto.precio }}</span>
+      <div>
+        <button (click)="modificarCantidadCandy(i, -1)" style="padding: 2px 8px;">-</button>
+        <span style="margin: 0 10px;">{{ item.cantidad }}</span>
+        <button (click)="modificarCantidadCandy(i, 1)" style="padding: 2px 8px;">+</button>
+      </div>
+    </div>
+
+    <hr style="margin: 15px 0;">
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <input type="text" [(ngModel)]="codigoCupon" placeholder="Código de Cupón" style="padding: 8px;" />
+      <button (click)="aplicarCupon()" style="padding: 8px 15px; background: #17a2b8; color: white; border: none; cursor: pointer;">Aplicar Cupón</button>
+    </div>
+    <p *ngIf="descuentoAplicado > 0" style="color: green; font-weight: bold; margin-top: 5px;">¡Descuento del {{ descuentoAplicado }}% aplicado!</p>
+  </section>
+
+  <section *ngIf="funcionSeleccionada" style="background: #eef6ff; padding: 15px; border-radius: 8px; text-align: right;">
+    <h4>Total a pagar: ${{ calcularTotal() }}</h4>
+    <button (click)="finalizarCompra()" style="padding: 12px 25px; background: #28a745; color: white; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
+      Pagar y Generar QR
+    </button>
+  </section>
+
+  <div *ngIf="compraFinalizada" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:8px; max-width:400px; text-align:center;">
+      <h3 style="color:green;">¡Compra Confirmada!</h3>
+      <p><strong>Película:</strong> {{ pelicula.nombre }}</p>
+      <p><strong>Total Pagado:</strong> ${{ calcularTotal() }}</p>
+
+      <div style="margin: 20px 0; border: 2px dashed #333; padding: 20px;">
+        <p style="margin:0; font-size:12px; color:#666;">CÓDIGO QR / ENTRADA</p>
+        <h2 style="letter-spacing: 2px; margin: 10px 0;">{{ codigoQrGenerado }}</h2>
+      </div>
+
+      <button (click)="volverAHome()" style="padding:10px 20px; background:#007bff; color:white; border:none; cursor:pointer;">Volver al Inicio</button>
+    </div>
+  </div>
+</div>

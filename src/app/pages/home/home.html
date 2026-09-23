@@ -41,9 +41,11 @@
         <p>🏷️ {{ pelicula.generos.join(', ') }}</p>
         <p>⭐ Promedio: {{ obtenerDetallesResenia(pelicula.id).promedio }}</p>
         
-        <button style="width: 100%; padding: 8px; background-color: #007bff; color: white; border: none; border-radius: 4px;">
-          Sacar Entradas
-        </button>
+       <button 
+        [routerLink]="['/compra', pelicula.id]" 
+        style="width: 100%; padding: 8px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Sacar Entradas
+      </button>
       </div>
     } @empty {
       <p>No se encontraron películas que coincidan con la búsqueda.</p>

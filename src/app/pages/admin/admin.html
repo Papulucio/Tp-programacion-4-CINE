@@ -1,0 +1,207 @@
+<div style="padding: 20px; max-width: 1000px; margin: 0 auto; font-family: sans-serif;">
+  <h2>Panel de Administración</h2>
+
+  <!-- SECCIÓN: CUPONES DE DESCUENTO -->
+  <section style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Configuración de Cupones de Descuento</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+      <input type="text" placeholder="Código (ej: SENIOR30)" [(ngModel)]="nuevoCodigo" style="padding: 8px;" />
+      <input type="number" placeholder="% Descuento" [(ngModel)]="nuevoPorcentaje" min="1" max="100" style="padding: 8px; width: 100px;" />
+      <label style="display: flex; align-items: center; gap: 5px;">
+        <input type="checkbox" [(ngModel)]="soloMayores50" /> Solo para mayores de 50 años
+      </label>
+      <button (click)="guardarCupon()" style="padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer;">Crear Cupón</button>
+    </div>
+
+    <h4>Cupones Existentes</h4>
+    <ul style="list-style: none; padding: 0;">
+      <li *ngFor="let cupon of cineService.getCupones()" style="display: flex; gap: 15px; align-items: center; margin-bottom: 8px;">
+        <strong>{{ cupon.codigo }}</strong> - 
+        <span>Restricción: {{ cupon.soloMayores50 ? 'Mayores de 50 años' : 'Público general' }}</span>
+        <label>
+          Descuento %: 
+          <input type="number" [value]="cupon.porcentajeDescuento" (change)="modificarDescuento(cupon.id, $event)" style="width: 60px; padding: 4px;" />
+        </label>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SECCIÓN: PROGRAMACIÓN DE FUNCIONES -->
+  <section style="background: #eef6ff; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Programar Función (Asignación Automática de Sala)</h3>
+    
+    <div style="margin-bottom: 10px;">
+      <label>Película: </label>
+      <select [(ngModel)]="peliculaSeleccionadaId" style="padding: 8px; width: 100%;">
+        <option [ngValue]="null">-- Seleccionar Película --</option>
+        <option *ngFor="let p of cineService.getPeliculas()" [value]="p.id">{{ p.nombre }} ({{ p.duracionMinutos }} min)</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label>Días de Proyección: </label>
+      <div style="display: flex; gap: 10px; margin-top: 5px;">
+        <button *ngFor="let dia of diasSemana" 
+                type="button" 
+                (click)="toggleDia(dia)"
+                [style.background]="diasSeleccionados.includes(dia) ? '#28a745' : '#ccc'"
+                style="color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+          {{ dia }}
+        </button>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+      <div>
+        <label>Hora Inicio: </label>
+        <input type="time" [(ngModel)]="horaInicio" style="padding: 6px;" />
+      </div>
+      <div>
+        <label>Precio Entrada ($): </label>
+        <input type="number" [(ngModel)]="precioFuncion" style="padding: 6px;" />
+      </div>
+    </div>
+
+    <button (click)="programarFuncion()" style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer;">
+      Asignar Función Automáticamente
+    </button>
+
+    <p *ngIf="mensajeAsignacion" [style.color]="esExito ? 'green' : 'red'" style="margin-top: 10px; font-weight: bold;">
+      {{ mensajeAsignacion }}
+    </p>
+  </section>
+
+  <!-- SECCIÓN: TABLA DE FUNCIONES ASIGNADAS -->
+  <section style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Funciones Asignadas</h3>
+    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
+      <thead>
+        <tr style="background: #eee;">
+          <th>Película ID</th>
+          <th>Sala</th>
+          <th>Días</th>
+          <th>Horario (Inicio - Fin + 30m)</th>
+          <th>Precio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of cineService.getFunciones()">
+          <td>{{ f.peliculaId }}</td>
+          <td><strong>Sala {{ f.salaId }}</strong></td>
+          <td>{{ f.dias.join(', ') }}</td>
+          <td>{{ f.horaInicio }} hs a {{ f.horaFin }} hs</td>
+          <td>${{ f.precio }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECCIÓN: GESTIÓN DE CANDY BAR -->
+  <section style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Gestión de Candy Bar</h3>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+      <input 
+        type="text" 
+        placeholder="Nombre del Producto" 
+        [(ngModel)]="nuevoProductoNombre"
+        style="padding: 8px;"
+      >
+      
+      <select [(ngModel)]="nuevoProductoCategoria" style="padding: 8px;">
+        <option value="Pochoclos">Pochoclos</option>
+        <option value="Bebidas">Bebidas</option>
+        <option value="Golosinas">Golosinas</option>
+        <option value="Combos">Combos</option>
+      </select>
+      
+      <input 
+        type="number" 
+        placeholder="Precio ($)" 
+        [(ngModel)]="nuevoProductoPrecio"
+        style="padding: 8px; width: 100px;"
+      >
+      
+      <button (click)="crearProductoCandy()" style="padding: 8px 15px; background-color: #007bff; color: white; border: none; cursor: pointer;">
+        Agregar Producto
+      </button>
+    </div>
+
+    <h4>Productos Actuales</h4>
+    <table border="1" style="width: 100%; text-align: left; border-collapse: collapse;">
+      <thead>
+        <tr style="background-color: #eee;">
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let prod of cineService.getProductosCandy()">
+          <td>{{ prod.id }}</td>
+          <td>{{ prod.nombre }}</td>
+          <td>{{ prod.categoria }}</td>
+          <td>${{ prod.precio }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- NUEVA SECCIÓN MAIL 7: FIDELIZACIÓN Y COMBOS -->
+  <section style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px;">
+    <h3>Programa de Fidelización y Combos Especiales (Mail 7)</h3>
+
+    <!-- 1. Costo de Recompensas en Puntos -->
+    <div style="margin-bottom: 20px;">
+      <h4>Configurar Costo de Recompensas (Puntos)</h4>
+      <p style="font-size: 0.9em; color: #666;">Los usuarios acumulan 1 punto por cada $1 gastado.</p>
+      <ul style="list-style: none; padding: 0;">
+        <li *ngFor="let rec of recompensas" style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+          <span><strong>{{ rec.nombre }}</strong> ({{ rec.tipo }}):</span>
+          <input 
+            type="number" 
+            [value]="rec.puntosRequeridos" 
+            (change)="modificarPuntosRecompensa(rec.id, $event)" 
+            style="width: 90px; padding: 4px;" 
+          />
+          <span>puntos</span>
+        </li>
+      </ul>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #e2d3a7; margin: 15px 0;">
+
+    <!-- 2. Crear Combos Especiales -->
+    <div>
+      <h4>Crear Combo Especial</h4>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <input type="text" placeholder="Nombre (ej: Combo Pareja)" [(ngModel)]="nuevoComboNombre" style="padding: 8px; flex: 1;" />
+        <input type="text" placeholder="Descripción (ej: 2 Entradas + Pochoclo)" [(ngModel)]="nuevoComboDescripcion" style="padding: 8px; flex: 2;" />
+        <input type="number" placeholder="Precio ($)" [(ngModel)]="nuevoComboPrecio" style="padding: 8px; width: 100px;" />
+        <button (click)="crearCombo()" style="padding: 8px 15px; background-color: #ffc107; color: #212529; border: none; font-weight: bold; cursor: pointer;">
+          Crear Combo
+        </button>
+      </div>
+
+      <h4>Combos Configurados</h4>
+      <table border="1" style="width: 100%; text-align: left; border-collapse: collapse; background: white;">
+        <thead>
+          <tr style="background-color: #ffe8a1;">
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let combo of combos">
+            <td><strong>{{ combo.nombre }}</strong></td>
+            <td>{{ combo.descripcion }}</td>
+            <td>${{ combo.precio }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

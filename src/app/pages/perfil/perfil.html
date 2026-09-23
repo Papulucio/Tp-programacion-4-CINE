@@ -1,0 +1,89 @@
+<div style="padding: 20px; max-width: 800px; margin: 0 auto; font-family: sans-serif;">
+  <h2>Mi Perfil</h2>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px;">
+    <!-- TARJETA DE PUNTOS -->
+    <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px; border-radius: 12px;">
+      <h3 style="margin: 0; font-size: 1.2em; opacity: 0.9;">Puntos Acumulados</h3>
+      <p style="font-size: 2.5em; font-weight: bold; margin: 10px 0 0 0;">{{ puntos }} <span style="font-size: 0.4em;">pts</span></p>
+    </div>
+
+    <div style="background: linear-gradient(135deg, #2b5876, #4e4376); color: white; padding: 20px; border-radius: 12px;">
+      <h3 style="margin: 0; font-size: 1.2em; opacity: 0.9;">Crédito Disponible</h3>
+      <p style="font-size: 2.5em; font-weight: bold; margin: 10px 0 0 0;">${{ credito }}</p>
+    </div>
+  </div>
+
+  <p *ngIf="mensaje" style="padding: 10px; background: #e2f0d9; border: 1px solid #b2d8b2; color: #2d572c; border-radius: 6px; margin-bottom: 20px;">
+    {{ mensaje }}
+  </p>
+
+  <section style="margin-bottom: 30px;">
+    <h3>Mis Reservas</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div *ngFor="let t of misTickets" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h4 style="margin: 0 0 5px 0;">{{ t.peliculaNombre }}</h4>
+          <p style="margin: 0; font-size: 0.9em; color: #555;"><strong>Función:</strong> {{ t.frecuencia }}</p>
+          <p style="margin: 3px 0 0 0; font-size: 0.9em; color: #555;"><strong>Monto:</strong> ${{ t.montoTotal }}</p>
+        </div>
+        <div>
+          <span *ngIf="t.estado === 'CANCELADO'" style="padding: 6px 12px; background: #f8d7da; color: #721c24; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
+            CANCELADO
+          </span>
+          <button 
+            *ngIf="t.estado === 'ACTIVO'"
+            (click)="cancelarReserva(t.id)" 
+            style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            Cancelar Reserva
+          </button>
+        </div>
+      </div>
+
+      <p *ngIf="misTickets.length === 0" style="color: #777; text-align: center; padding: 10px;">
+        No tenés entradas o reservas activas.
+      </p>
+    </div>
+  </section>
+
+  <!-- CANJE DE RECOMPENSAS -->
+  <section style="margin-bottom: 30px;">
+    <h3>Canjear Recompensas</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;">
+      <div *ngFor="let rec of recompensas" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff; text-align: center;">
+        <h4 style="margin: 0 0 10px 0;">{{ rec.nombre }}</h4>
+        <p style="font-weight: bold; color: #2a5298;">{{ rec.puntosRequeridos }} Puntos</p>
+        <button 
+          (click)="canjear(rec.id)" 
+          [disabled]="puntos < rec.puntosRequeridos"
+          style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          Canjear
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL DE CANJES -->
+  <section>
+    <h3>Historial de Canjes</h3>
+    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
+      <thead>
+        <tr style="background: #f4f4f4;">
+          <th style="padding: 8px;">Recompensa</th>
+          <th style="padding: 8px;">Puntos Usados</th>
+          <th style="padding: 8px;">Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of historial">
+          <td style="padding: 8px;">{{ c.recompensaNombre }}</td>
+          <td style="padding: 8px;">-{{ c.puntosUtilizados }} pts</td>
+          <td style="padding: 8px;">{{ c.fecha }}</td>
+        </tr>
+        <tr *ngIf="historial.length === 0">
+          <td colspan="3" style="padding: 12px; text-align: center; color: #777;">No realizaste ningún canje todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

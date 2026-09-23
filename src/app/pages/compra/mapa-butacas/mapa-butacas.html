@@ -1,0 +1,58 @@
+<div class="pantalla-cine">PANTALLA</div>
+
+@if (!esAptoParaEdad) {
+  <div class="alerta-edad" style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+    ⚠️ Película con restricción (+{{ peliculaActual?.clasificacion_edad || 18 }} años). Recuerde que menores deben ir acompañados por un adulto.
+  </div>
+} @else {
+  <div class="alerta-edad" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+    ✓ Edad verificada (+{{ peliculaActual?.clasificacion_edad || 18 }} años). Sos mayor de edad para ver esta película.
+  </div>
+}
+
+<div class="mapa-sala">
+  @for (fila of filas; track fila) {
+    <div class="fila-asientos" 
+         [class.fila-discapacidad]="esFilaDiscapacidad(fila)"
+         [class.fila-vip]="esFilaVIP(fila)">
+      
+      <span class="letra-fila">{{ fila }}</span>
+
+      <div class="bloque-columnas">
+        @for (col of obtenerColumnasPorFila(fila).colIzquierda; track col) {
+          <button 
+            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
+            [class.discapacidad]="esFilaDiscapacidad(fila)"
+            [class.vip]="esFilaVIP(fila)"
+            (click)="seleccionarButaca(fila, col)">
+            {{ col }}
+          </button>
+        }
+      </div>
+
+      <div class="bloque-columnas centro">
+        @for (col of obtenerColumnasPorFila(fila).colCentro; track col) {
+          <button 
+            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
+            [class.discapacidad]="esFilaDiscapacidad(fila)"
+            [class.vip]="esFilaVIP(fila)"
+            (click)="seleccionarButaca(fila, col)">
+            {{ col }}
+          </button>
+        }
+      </div>
+
+      <div class="bloque-columnas">
+        @for (col of obtenerColumnasPorFila(fila).colDerecha; track col) {
+          <button 
+            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
+            [class.discapacidad]="esFilaDiscapacidad(fila)"
+            [class.vip]="esFilaVIP(fila)"
+            (click)="seleccionarButaca(fila, col)">
+            {{ col }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

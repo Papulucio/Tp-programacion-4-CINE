@@ -1,0 +1,48 @@
+<div style="padding: 20px; max-width: 600px; margin: 0 auto; font-family: sans-serif;">
+  <h2>Terminal de Control de Empleados</h2>
+  
+  <div style="background: #f8f9fa; border: 2px solid #ccc; padding: 20px; border-radius: 8px;">
+    <h3>Validar Ticket / Código QR</h3>
+
+    <div style="margin-bottom: 15px;">
+      <label style="margin-right: 15px;">
+        <input type="radio" name="tipo" value="entrada" [(ngModel)]="tipoValidacion" /> Entrada Cine
+      </label>
+      <label>
+        <input type="radio" name="tipo" value="candy" [(ngModel)]="tipoValidacion" /> Entrega Candy Bar
+      </label>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; margin-bottom: 5px;">Código QR / Manual (Ej: CINE-8823):</label>
+      <input type="text" 
+             [(ngModel)]="codigoIngresado" 
+             placeholder="Escanear o ingresar código..." 
+             style="width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box;" 
+             (keyup.enter)="procesarCodigo()" />
+    </div>
+
+    <button (click)="procesarCodigo()" style="width: 100%; padding: 12px; background: #0056b3; color: white; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
+      Validar Código
+    </button>
+
+    <div *ngIf="resultadoMensaje" 
+         [style.background]="esExito ? '#d4edda' : '#f8d7da'" 
+         [style.color]="esExito ? '#155724' : '#721c24'" 
+         style="margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; text-align: center;">
+      {{ resultadoMensaje }}
+    </div>
+  </div>
+
+  <div style="margin-top: 30px;">
+    <h4>Tickets en Sistema para Pruebas:</h4>
+    <ul>
+      <li *ngFor="let t of cineService.getTickets()">
+        <strong>Código:</strong> {{ t.codigoQr }} | 
+        <strong>Película:</strong> {{ t.peliculaNombre }} | 
+        <span>Entrada Usada: <strong>{{ t.validadoEntrada ? 'SÍ' : 'NO' }}</strong></span> | 
+        <span>Candy Entregado: <strong>{{ t.validadoCandy ? 'SÍ' : 'NO' }}</strong></span>
+      </li>
+    </ul>
+  </div>
+</div>
