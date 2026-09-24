@@ -9,4 +9,8 @@ export interface Pelicula {
   idioma: 'Castellano' | 'Subtitulada';
   ventasTotales: number;
   esDestacada?: boolean;
+  esProximamente?: boolean;
+  enPreventa?: boolean;
+  precioPreventa?: number;
+  fechaEstreno?: string;
 }

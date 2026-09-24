@@ -2,7 +2,6 @@
   <h2>Mi Perfil</h2>
   
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <!-- TARJETA DE PUNTOS -->
     <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px; border-radius: 12px;">
       <h3 style="margin: 0; font-size: 1.2em; opacity: 0.9;">Puntos Acumulados</h3>
       <p style="font-size: 2.5em; font-weight: bold; margin: 10px 0 0 0;">{{ puntos }} <span style="font-size: 0.4em;">pts</span></p>
@@ -14,10 +13,23 @@
     </div>
   </div>
 
+  <!-- MENSAJE DE ALERTA / NOTIFICACIÓN -->
   <p *ngIf="mensaje" style="padding: 10px; background: #e2f0d9; border: 1px solid #b2d8b2; color: #2d572c; border-radius: 6px; margin-bottom: 20px;">
     {{ mensaje }}
   </p>
 
+  <!-- NUEVA SECCIÓN: MIS PELÍCULAS -->
+  <section style="margin-bottom: 30px;">
+    <h3>Mis Películas Vistas / Reservadas</h3>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <div *ngFor="let pelicula of misPeliculas" style="background: #f8f9fa; border: 1px solid #ced4da; padding: 10px 15px; border-radius: 20px; font-weight: 500; color: #333;">
+        🎬 {{ pelicula }}
+      </div>
+      <p *ngIf="misPeliculas.length === 0" style="color: #777; margin: 0;">No registras películas asociadas.</p>
+    </div>
+  </section>
+
+  <!-- SECCIÓN DE MIS RESERVAS -->
   <section style="margin-bottom: 30px;">
     <h3>Mis Reservas</h3>
     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -27,10 +39,18 @@
           <p style="margin: 0; font-size: 0.9em; color: #555;"><strong>Función:</strong> {{ t.frecuencia }}</p>
           <p style="margin: 3px 0 0 0; font-size: 0.9em; color: #555;"><strong>Monto:</strong> ${{ t.montoTotal }}</p>
         </div>
-        <div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button 
+            *ngIf="t.estado === 'ACTIVO'"
+            (click)="descargarPDF(t)" 
+            style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            Descargar PDF
+          </button>
+
           <span *ngIf="t.estado === 'CANCELADO'" style="padding: 6px 12px; background: #f8d7da; color: #721c24; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
             CANCELADO
           </span>
+
           <button 
             *ngIf="t.estado === 'ACTIVO'"
             (click)="cancelarReserva(t.id)" 
@@ -40,6 +60,7 @@
         </div>
       </div>
 
+      <!-- MENSAJE SI NO HAY TICKETS -->
       <p *ngIf="misTickets.length === 0" style="color: #777; text-align: center; padding: 10px;">
         No tenés entradas o reservas activas.
       </p>

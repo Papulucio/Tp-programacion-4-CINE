@@ -4,6 +4,8 @@ export interface Funcion {
   salaId: number;
   dias: string[];
   horaInicio: string;
-  horaFin: string; 
+  horaFin: string;
   precio: number;
+  formato: string; 
+  idioma: string;  
 }

@@ -1,30 +1,102 @@
 <div style="padding: 20px; max-width: 900px; margin: 0 auto; font-family: sans-serif;" *ngIf="pelicula">
   <h2>Comprar Entradas: {{ pelicula.nombre }}</h2>
 
+  <!-- SECCIÓN RESEÑAS Y OPINIONES -->
+  <section style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+    <h3>Opiniones y Calificaciones</h3>
+
+    <!-- Formulario para agregar opinión -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #eee;">
+      <h4 style="margin-top: 0; margin-bottom: 10px;">Dejá tu reseña</h4>
+      <div style="margin-bottom: 10px;">
+        <label style="font-weight: bold; margin-right: 10px;">Puntuación:</label>
+        <select [(ngModel)]="nuevaCalificacion" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+          <option [value]="5">⭐⭐⭐⭐⭐ (5/5)</option>
+          <option [value]="4">⭐⭐⭐⭐ (4/5)</option>
+          <option [value]="3">⭐⭐⭐ (3/5)</option>
+          <option [value]="2">⭐⭐ (2/5)</option>
+          <option [value]="1">⭐ (1/5)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <textarea 
+          [(ngModel)]="nuevoComentario" 
+          placeholder="Escribí un comentario corto sobre la película..." 
+          rows="2" 
+          style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
+      </div>
+      <button 
+        (click)="guardarResena()" 
+        style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        Publicar Opinión
+      </button>
+    </div>
+
+    <!-- Listado de comentarios -->
+    <div style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
+      <div *ngFor="let res of resenas" style="border-bottom: 1px solid #eee; padding-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong>{{ res.usuario }}</strong>
+          <span style="color: #f39c12; font-weight: bold;">{{ '★'.repeat(res.estrellas) }} ({{ res.estrellas }}/5)</span>
+        </div>
+        <p style="margin: 3px 0 0 0; color: #555; font-size: 14px;">{{ res.comentario }}</p>
+      </div>
+
+      <p *ngIf="resenas.length === 0" style="color: #777; font-style: italic; text-align: center; margin: 10px 0;">
+        Todavía no hay comentarios sobre esta película. ¡Sé el primero en opinar!
+      </p>
+    </div>
+  </section>
+
+  <!-- 1. SELECCIONA LA FUNCIÓN -->
   <section style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
     <h3>1. Selecciona la Función</h3>
     <div *ngIf="funcionesDisponibles.length === 0" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
-      No hay funciones programadas para esta película todavía. Asigna funciones desde el panel de <a routerLink="/admin">Admin</a>.
+      No hay funciones programadas para esta película todavía. Asigna funciones desde el panel de Admin.
     </div>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
       <button *ngFor="let f of funcionesDisponibles" 
               (click)="seleccionarFuncion(f)" 
               [style.background]="funcionSeleccionada?.id === f.id ? '#0056b3' : '#e0e0e0'"
               [style.color]="funcionSeleccionada?.id === f.id ? 'white' : 'black'"
-              style="padding: 10px; border: none; border-radius: 4px; cursor: pointer;">
-        Sala {{ f.salaId }} | {{ f.dias.join(', ') }} a las {{ f.horaInicio }}hs (${{ f.precio }})
+              style="padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+        <div>
+          <strong>Sala {{ f.salaId }}</strong> 
+          <span style="background: #ffc107; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 12px; margin-left: 5px;">{{ f.formato }}</span>
+          <span style="background: #17a2b8; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 12px; margin-left: 3px;">{{ f.idioma }}</span>
+        </div>
+        <div style="font-size: 13px; margin-top: 4px;">
+          {{ f.dias ? f.dias.join(', ') : '' }} a las {{ f.horaInicio }}hs (${{ f.precio }})
+        </div>
       </button>
     </div>
   </section>
 
+  <!-- 2. SELECCIONA TUS BUTACAS -->
   <section *ngIf="funcionSeleccionada" style="background: #fff; border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
     <h3>2. Selecciona tus Butacas (Sala {{ funcionSeleccionada.salaId }})</h3>
-    
-    <app-mapa-butacas></app-mapa-butacas>
+    <app-mapa-butacas (butacasChange)="onButacasChange($event)"></app-mapa-butacas>
   </section>
 
+  <!-- 3. COMBOS ESPECIALES DESTACADOS (Requerimiento 03/03) -->
+  <section *ngIf="funcionSeleccionada && combosEspecialesDisponibles.length > 0" style="background: #fff8e1; border: 2px dashed #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <h3 style="color: #b78103; margin-top: 0;"> Combos Especiales Destacados </h3>
+    <div *ngFor="let item of combosSeleccionados; let i = index" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #ffeeba;">
+      <div>
+        <strong style="color: #333;">{{ item.combo.nombre }}</strong><br>
+        <small style="color: #666;">{{ item.combo.descripcion }} - <strong style="color: #28a745;">${{ item.combo.precio }}</strong></small>
+      </div>
+      <div>
+        <button (click)="modificarCantidadCombo(i, -1)" style="padding: 2px 8px;">-</button>
+        <span style="margin: 0 10px; font-weight: bold;">{{ item.cantidad }}</span>
+        <button (click)="modificarCantidadCombo(i, 1)" style="padding: 2px 8px;">+</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. COMBO CANDY BAR Y CUPÓN -->
   <section *ngIf="funcionSeleccionada" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h3>3. Combo Candy Bar</h3>
+    <h3>4. Productos Candy Bar (Individuales)</h3>
     <div *ngFor="let item of productosSeleccionados; let i = index" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
       <span>{{ item.producto.nombre }} - ${{ item.producto.precio }}</span>
       <div>
@@ -43,6 +115,7 @@
     <p *ngIf="descuentoAplicado > 0" style="color: green; font-weight: bold; margin-top: 5px;">¡Descuento del {{ descuentoAplicado }}% aplicado!</p>
   </section>
 
+  <!-- TOTAL Y PAGO -->
   <section *ngIf="funcionSeleccionada" style="background: #eef6ff; padding: 15px; border-radius: 8px; text-align: right;">
     <h4>Total a pagar: ${{ calcularTotal() }}</h4>
     <button (click)="finalizarCompra()" style="padding: 12px 25px; background: #28a745; color: white; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
@@ -50,6 +123,7 @@
     </button>
   </section>
 
+  <!-- MODAL COMPRA FINALIZADA -->
   <div *ngIf="compraFinalizada" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center;">
     <div style="background:white; padding:30px; border-radius:8px; max-width:400px; text-align:center;">
       <h3 style="color:green;">¡Compra Confirmada!</h3>

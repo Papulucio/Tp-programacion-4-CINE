@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -10,6 +11,8 @@ export interface Pelicula {
 
 @Component({
   selector: 'app-mapa-butacas',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './mapa-butacas.html',
   styleUrls: ['./mapa-butacas.css']
 })
@@ -21,7 +24,10 @@ export class MapaButacasComponent implements OnInit, OnDestroy {
   filas = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
 
   butacasOcupadas = signal<string[]>([]);
-  butacasSeleccionadas = signal<string[]>([]);
+  butacasSeleccionadas = signal<{ id: string; fila: string; numero: number }[]>([]);
+
+  // NUEVO: Emitimos los cambios de butacas hacia el componente padre (CompraComponent)
+  butacasChange = output<{ id: string; fila: string; numero: number }[]>();
   
   private canalRealtime!: RealtimeChannel;
 
@@ -65,7 +71,6 @@ export class MapaButacasComponent implements OnInit, OnDestroy {
     return ['R', 'S', 'T'].includes(fila);
   }
 
-  // IDENTIFICACIÓN DE FILAS ADAPTADAS
   esFilaDiscapacidad(fila: string): boolean {
     return ['J', 'K'].includes(fila);
   }
@@ -111,23 +116,32 @@ export class MapaButacasComponent implements OnInit, OnDestroy {
       .subscribe();
   }
 
+  // Modificado para alternar selección local y emitir hacia el componente de Compra
   async seleccionarButaca(fila: string, columna: number) {
-    if (!this.esAptoParaEdad) {
-      alert(`Atención: Esta película es para +${this.peliculaActual.clasificacion_edad} años. Debe ser comprada e ir acompañado por un adulto.`);
-    }
-
-    if (this.esFilaVIP(fila)) {
-      console.log(`Seleccionaste la butaca VIP ${fila}-${columna}. Tiene costo preferencial.`);
-    }
-
     const key = `${fila}-${columna}`;
     if (this.butacasOcupadas().includes(key)) return;
 
-    const { error } = await this.supabaseService.client
-      .from('reservas_butacas')
-      .insert({ funcion_id: this.funcionId, fila, columna, estado: 'ocupada' });
+    if (!this.esAptoParaEdad) {
+      alert(`Atención: Esta película es para +${this.peliculaActual.clasificacion_edad} años.`);
+    }
 
-    if (error) console.error(error);
+    const seleccionActual = [...this.butacasSeleccionadas()];
+    const index = seleccionActual.findIndex(b => b.id === key);
+
+    if (index > -1) {
+      // Si ya estaba seleccionada, la quitamos
+      seleccionActual.splice(index, 1);
+    } else {
+      // Si no estaba, la agregamos
+      seleccionActual.push({ id: key, fila, numero: columna });
+    }
+
+    this.butacasSeleccionadas.set(seleccionActual);
+    this.butacasChange.emit(seleccionActual); // ¡Acá se comunica con CompraComponent!
+  }
+
+  isSeleccionada(fila: string, columna: number): boolean {
+    return this.butacasSeleccionadas().some(b => b.id === `${fila}-${columna}`);
   }
 
   ngOnDestroy() {

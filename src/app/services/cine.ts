@@ -35,6 +35,7 @@ export interface LogAuditoria {
 export class CineService {
   private supabase = inject(SupabaseService).client;
 
+  // Actualizado con tus películas reales + la nueva película en preventa
   private peliculas = signal<Pelicula[]>([
     {
       id: 1,
@@ -49,7 +50,7 @@ export class CineService {
     },
     {
       id: 2,
-      nombre: 'El Senor de los Anillos',
+      nombre: 'El Señor de los Anillos',
       sinopsis: 'Un joven hobbit emprende un viaje para destruir un anillo único.',
       duracionMinutos: 178,
       imagenUrl: 'https://es.web.img2.acsta.net/c_310_420/medias/nmedia/18/89/67/45/20061512.jpg',
@@ -79,18 +80,38 @@ export class CineService {
       formato: '2D',
       idioma: 'Castellano',
       ventasTotales: 950
+    },
+    {
+      id: 99,
+      nombre: 'Dune: Parte Tres (Preventa)',
+      sinopsis: 'Próxima gran superproducción de ciencia ficción. Asegurá tus entradas antes del estreno oficial.',
+      duracionMinutos: 165,
+      generos: ['Ciencia Ficción', 'Aventura'],
+      formato: '2D',
+      idioma: 'Subtitulada',
+      imagenUrl: 'https://m.media-amazon.com/images/M/MV5BYjk1NjgwZDMtYzI5OS00Y2Q4LWI1NmItNTE5OGU2NDVmMTAxXkEyXkFqcGc@._V1_.jpg',
+      esProximamente: true,
+      enPreventa: true,
+      precioPreventa: 3200,
+      fechaEstreno: '2026-04-15',
+      ventasTotales: 0
     }
   ]);
 
-  private resenias = signal<Resenia[]>([
-    { id: 1, peliculaId: 1, usuarioNombre: 'Juan', estrellas: 5, comentario: 'Excelente efectos 3D', fecha: '2026-01-10' },
-    { id: 2, peliculaId: 1, usuarioNombre: 'Maria', estrellas: 4, comentario: 'Un poco larga pero muy buena', fecha: '2026-01-12' },
-    { id: 3, peliculaId: 2, usuarioNombre: 'Carlos', estrellas: 5, comentario: 'Una obra de arte del cine', fecha: '2026-01-15' }
-  ]);
+  private reseniasIniciales: Resenia[] = [
+    { id: 1, peliculaId: 1, usuarioNombre: 'Juan', estrellas: 5, comentario: 'Excelentes efectos 3D y banda sonora impresionante.', fecha: '2026-01-10' },
+    { id: 2, peliculaId: 1, usuarioNombre: 'María', estrellas: 4, comentario: 'Un poco larga pero visualmente es una joya.', fecha: '2026-01-12' },
+    { id: 3, peliculaId: 2, usuarioNombre: 'Carlos', estrellas: 5, comentario: 'Una obra maestra del cine de fantasía.', fecha: '2026-01-15' },
+    { id: 4, peliculaId: 2, usuarioNombre: 'Lucía', estrellas: 5, comentario: 'La vi 10 veces y me sigue emocionando como el primer día.', fecha: '2026-01-18' },
+    { id: 5, peliculaId: 3, usuarioNombre: 'Pedro', estrellas: 5, comentario: 'La actuación del Guasón es inolvidable. Subliminal.', fecha: '2026-01-20' },
+    { id: 6, peliculaId: 4, usuarioNombre: 'Sofía', estrellas: 4, comentario: 'Hermosa película para disfrutar en familia, muy tierna.', fecha: '2026-01-22' }
+  ];
+
+  private resenias = signal<Resenia[]>(this.obtenerReseniasDeStorage());
 
   private productosCandy = signal<Producto[]>([
-    { id: 1, nombre: 'Pochoclos Grandes', precio: 3500, categoria: 'Pochoclos', imagenUrl: 'https://via.placeholder.com/150' },
-    { id: 2, nombre: 'Gaseosa 500ml', precio: 1800, categoria: 'Bebidas', imagenUrl: 'https://via.placeholder.com/150' }
+    { id: 1, nombre: 'Pochoclos Grandes', precio: 3500, categoria: 'Pochoclos', imagenUrl: 'https://acdn-us.mitiendanube.com/stores/005/692/871/products/d_nq_np_2x_826480-mla84353844951_052025-f-4ab3dc7ab537e3d90417474011436925-640-0.webp' },
+    { id: 2, nombre: 'Gaseosa 500ml', precio: 1800, categoria: 'Bebidas', imagenUrl: 'https://www.casa-segal.com/wp-content/uploads/2020/03/coca-cola-500cc-almacen-gaseosas-casa-segal-mendoza-600x600.jpg' }
   ]);
 
   private cupones = signal<Cupon[]>([
@@ -101,24 +122,11 @@ export class CineService {
   private salas = [1, 2, 3, 4];
   private funciones = signal<Funcion[]>([]);
 
-  private tickets = signal<Ticket[]>([
-    {
-      id: 1,
-      codigoQr: 'CINE-8823',
-      usuarioEmail: 'test@cine.com',
-      peliculaNombre: 'Avatar: El Camino del Agua',
-      frecuencia: 'Lunes 18:00hs',
-      fechaHoraFuncion: new Date(Date.now() + 86400000).toISOString(), // Mañana
-      productosCandy: ['Pochoclos Grandes'],
-      montoTotal: 8000,
-      validadoEntrada: false,
-      validadoCandy: false,
-      estado: 'ACTIVO'
-    }
-  ]);
-
-  private puntosUsuario = signal<number>(1200);
-  private historialCanjes = signal<Canje[]>([]);
+  // Tickets y datos de usuario sincronizados con localStorage
+  private tickets = signal<Ticket[]>(this.obtenerTicketsDeStorage());
+  private puntosUsuario = signal<number>(this.obtenerPuntosDeStorage());
+  private creditoUsuario = signal<number>(this.obtenerCreditoDeStorage());
+  private historialCanjes = signal<Canje[]>(this.obtenerHistorialDeStorage());
 
   private recompensas = signal<Recompensa[]>([
     { id: 1, nombre: 'Entrada General Gratis', tipo: 'entrada', puntosRequeridos: 500 },
@@ -135,12 +143,83 @@ export class CineService {
     }
   ]);
 
-  private logsAuditoria = signal<LogAuditoria[]>([]);
-  private creditoUsuario = signal<number>(0);
+  private logsAuditoria = signal<LogAuditoria[]>([
+    { id: 1, fechaHora: '2026-03-10 14:32', accion: 'INICIO_SISTEMA', usuario: 'admin@cine.com', detalle: 'Sistema inicializado correctamente.' }
+  ]);
 
   constructor() {
     this.cargarFuncionesDesdeSupabase();
   }
+
+  // --- MÉTODOS DE PERSISTENCIA LOCAL ---
+  private obtenerTicketsDeStorage(): Ticket[] {
+    const data = localStorage.getItem('tickets_db');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { console.error(e); }
+    }
+    return [
+      {
+        id: 1,
+        codigoQr: 'CINE-8823',
+        usuarioEmail: 'test@cine.com',
+        peliculaNombre: 'Avatar: El Camino del Agua',
+        frecuencia: 'Lunes 18:00hs',
+        fechaHoraFuncion: new Date(Date.now() + 86400000).toISOString(),
+        productosCandy: ['Pochoclos Grandes'],
+        montoTotal: 8000,
+        validadoEntrada: false,
+        validadoCandy: false,
+        estado: 'ACTIVO'
+      }
+    ];
+  }
+
+  private guardarTicketsEnStorage(lista: Ticket[]) {
+    localStorage.setItem('tickets_db', JSON.stringify(lista));
+  }
+
+  private obtenerReseniasDeStorage(): Resenia[] {
+    const data = localStorage.getItem('resenias_db');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { console.error(e); }
+    }
+    return this.reseniasIniciales;
+  }
+
+  private guardarReseniasEnStorage(lista: Resenia[]) {
+    localStorage.setItem('resenias_db', JSON.stringify(lista));
+  }
+
+  private obtenerPuntosDeStorage(): number {
+    const data = localStorage.getItem('puntos_db');
+    return data !== null ? Number(data) : 1200;
+  }
+
+  private guardarPuntosEnStorage(puntos: number) {
+    localStorage.setItem('puntos_db', puntos.toString());
+  }
+
+  private obtenerCreditoDeStorage(): number {
+    const data = localStorage.getItem('credito_db');
+    return data !== null ? Number(data) : 0;
+  }
+
+  private guardarCreditoEnStorage(credito: number) {
+    localStorage.setItem('credito_db', credito.toString());
+  }
+
+  private obtenerHistorialDeStorage(): Canje[] {
+    const data = localStorage.getItem('historial_canjes_db');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { console.error(e); }
+    }
+    return [];
+  }
+
+  private guardarHistorialDeStorage(historial: Canje[]) {
+    localStorage.setItem('historial_canjes_db', JSON.stringify(historial));
+  }
+  // -------------------------------------
 
   async cargarFuncionesDesdeSupabase() {
     const { data, error } = await this.supabase.from('funciones').select('*');
@@ -157,7 +236,9 @@ export class CineService {
         dias: f.dias,
         horaInicio: f.hora_inicio,
         horaFin: f.hora_fin,
-        precio: f.precio
+        precio: f.precio,
+        formato: f.formato || '2D',        
+        idioma: f.idioma || 'Castellano'   
       }));
       this.funciones.set(funcionesMapeadas);
     }
@@ -169,9 +250,9 @@ export class CineService {
       .slice(0, 3);
   });
 
-  getPeliculas(): Pelicula[] {
-    return this.peliculas();
-  }
+  getPeliculas(): Pelicula[] { return this.peliculas(); }
+  getPeliculasEnCartelera(): Pelicula[] { return this.peliculas().filter(p => !p.enPreventa && !p.esProximamente); }
+  getPeliculasEnPreventa(): Pelicula[] { return this.peliculas().filter(p => p.enPreventa === true); }
 
   obtenerGeneros(): string[] {
     const todosLosGeneros = this.peliculas().flatMap(p => p.generos);
@@ -193,7 +274,38 @@ export class CineService {
       id: Date.now(),
       fecha: new Date().toISOString().split('T')[0]
     };
-    this.resenias.update(list => [...list, reseniaCompleta]);
+
+    this.resenias.update(list => {
+      const nuevaLista = [...list, reseniaCompleta];
+      this.guardarReseniasEnStorage(nuevaLista);
+      return nuevaLista;
+    });
+  }
+
+  agregarTicket(nuevoTicket: Omit<Ticket, 'id' | 'validadoEntrada' | 'validadoCandy' | 'estado'>) {
+    const ticketCompleto: Ticket = {
+      ...nuevoTicket,
+      id: Date.now(),
+      validadoEntrada: false,
+      validadoCandy: false,
+      estado: 'ACTIVO'
+    };
+
+    this.tickets.update(lista => {
+      const nuevaLista = [...lista, ticketCompleto];
+      this.guardarTicketsEnStorage(nuevaLista);
+      return nuevaLista;
+    });
+    
+    this.acumularPuntos(nuevoTicket.montoTotal);
+
+    this.registrarLog(
+      'COMPRA_TICKET',
+      nuevoTicket.usuarioEmail,
+      `Compra realizada: ${nuevoTicket.peliculaNombre} - QR: ${nuevoTicket.codigoQr}`
+    );
+
+    return ticketCompleto;
   }
 
   getProductosCandy = (): Producto[] => this.productosCandy();
@@ -206,11 +318,83 @@ export class CineService {
   getCombosEspeciales = (): ComboEspecial[] => this.combosEspeciales();
   getLogsAuditoria = (): LogAuditoria[] => this.logsAuditoria();
   getCreditoUsuario = (): number => this.creditoUsuario();
+  getLogActividad = (): LogAuditoria[] => this.logsAuditoria();
+
+  getReporteFacturacionDiaria() {
+    const ticketsActivos = this.tickets().filter(t => t.estado !== 'CANCELADO');
+    const reporteMap: { [fecha: string]: { entradasVendidas: number; totalFacturado: number } } = {};
+
+    ticketsActivos.forEach(ticket => {
+      const fecha = ticket.fechaHoraFuncion ? ticket.fechaHoraFuncion.split('T')[0] : 'Sin Fecha';
+      if (!reporteMap[fecha]) {
+        reporteMap[fecha] = { entradasVendidas: 0, totalFacturado: 0 };
+      }
+      reporteMap[fecha].entradasVendidas += 1;
+      reporteMap[fecha].totalFacturado += ticket.montoTotal || 0;
+    });
+
+    return Object.keys(reporteMap).map(fecha => ({
+      fecha,
+      entradasVendidas: reporteMap[fecha].entradasVendidas,
+      totalFacturado: reporteMap[fecha].totalFacturado
+    })).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }
+
+  exportarExcelReal() {
+    const reporte = this.getReporteFacturacionDiaria();
+    let csvContent = "data:text/csv;charset=utf-8,Fecha,Entradas Vendidas,Total Facturado\r\n";
+    
+    reporte.forEach(row => {
+      csvContent += `${row.fecha},${row.entradasVendidas},$${row.totalFacturado}\r\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "reporte_facturacion.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.registrarLog('EXPORTAR_EXCEL', 'admin@cine.com', 'Exportación de reporte de facturación a formato CSV/Excel.');
+  }
+
+  exportarPDFReal() {
+    const reporte = this.getReporteFacturacionDiaria();
+    let contenidoHtml = `
+      <h2 style="font-family: sans-serif; color: #333;">Reporte de Facturación - Cine</h2>
+      <table border="1" style="width:100%; border-collapse:collapse; font-family: sans-serif; text-align: left;">
+        <tr style="background-color: #f2f2f2;">
+          <th style="padding: 8px;">Fecha</th>
+          <th style="padding: 8px;">Entradas Vendidas</th>
+          <th style="padding: 8px;">Total Facturado</th>
+        </tr>`;
+    
+    reporte.forEach(r => {
+      contenidoHtml += `<tr>
+        <td style="padding: 8px;">${r.fecha}</td>
+        <td style="padding: 8px;">${r.entradasVendidas}</td>
+        <td style="padding: 8px;">$${r.totalFacturado}</td>
+      </tr>`;
+    });
+    contenidoHtml += `</table>`;
+
+    const ventana = window.open('', '', 'height=600,width=800');
+    if (ventana) {
+      ventana.document.write('<html><head><title>Reporte PDF</title></head><body>');
+      ventana.document.write(contenidoHtml);
+      ventana.document.write('</body></html>');
+      ventana.document.close();
+      ventana.print();
+    }
+
+    this.registrarLog('EXPORTAR_PDF', 'admin@cine.com', 'Exportación de reporte de facturación a PDF.');
+  }
 
   registrarLog(accion: string, usuario: string, detalle: string) {
     const nuevoLog: LogAuditoria = {
       id: Date.now(),
-      fechaHora: new Date().toLocaleString(),
+      fechaHora: new Date().toISOString().replace('T', ' ').substring(0, 19),
       accion,
       usuario,
       detalle
@@ -219,7 +403,11 @@ export class CineService {
   }
 
   descontarCredito(monto: number) {
-    this.creditoUsuario.update(c => Math.max(0, c - monto));
+    this.creditoUsuario.update(c => {
+      const nuevo = Math.max(0, c - monto);
+      this.guardarCreditoEnStorage(nuevo);
+      return nuevo;
+    });
   }
 
   cancelarReserva(ticketId: number, usuarioEmail: string): { exito: boolean; mensaje: string } {
@@ -238,33 +426,50 @@ export class CineService {
       return { exito: false, mensaje: 'No podés cancelar con menos de 2 horas de anticipación a la función.' };
     }
 
-    ticket.estado = 'CANCELADO';
-    this.creditoUsuario.update(c => c + ticket.montoTotal);
+    this.tickets.update(lista => {
+      const actualizados = lista.map(t => t.id === ticketId ? { ...t, estado: 'CANCELADO' as const } : t);
+      this.guardarTicketsEnStorage(actualizados);
+      return actualizados;
+    });
+
+    this.creditoUsuario.update(c => {
+      const nuevo = c + ticket.montoTotal;
+      this.guardarCreditoEnStorage(nuevo);
+      return nuevo;
+    });
 
     this.registrarLog('CANCELACIÓN_RESERVA', usuarioEmail, `Cancelación de ticket #${ticket.id}. Crédito acreditado: $${ticket.montoTotal}`);
 
     return { exito: true, mensaje: `Reserva cancelada. Se han acreditado $${ticket.montoTotal} de saldo en tu perfil.` };
   }
 
-  actualizarPorcentajeCupon(cuponId: number, nuevoPorcentaje: number, usuarioAdmin: string = 'Admin') {
+  actualizarPorcentajeCupon(cuponId: number, nuevoPorcentaje: number, usuarioAdmin: string = 'admin@cine.com') {
     this.cupones.update(lista =>
       lista.map(c => (c.id === cuponId ? { ...c, porcentajeDescuento: nuevoPorcentaje } : c))
     );
     this.registrarLog('MODIFICACION_CUPON', usuarioAdmin, `Modificó descuento del cupón #${cuponId} a ${nuevoPorcentaje}%`);
   }
 
-  crearCupon(codigo: string, porcentaje: number, soloMayores50: boolean, usuarioAdmin: string = 'Admin') {
+  crearCupon(codigo: string, porcentaje: number, soloMayores50: boolean, usuarioAdmin: string = 'admin@cine.com') {
     const nuevo: Cupon = { id: Date.now(), codigo, porcentajeDescuento: porcentaje, soloMayores50 };
     this.cupones.update(lista => [...lista, nuevo]);
     this.registrarLog('CREACION_CUPON', usuarioAdmin, `Creó el cupón ${codigo} con ${porcentaje}% de descuento.`);
   }
 
-  agregarProductoCandy(producto: Producto, usuarioAdmin: string = 'Admin') {
+  agregarProductoCandy(producto: Producto, usuarioAdmin: string = 'admin@cine.com') {
     this.productosCandy.update(lista => [...lista, producto]);
     this.registrarLog('CREACION_PRODUCTO_CANDY', usuarioAdmin, `Agregó producto: ${producto.nombre}`);
   }
 
-  async crearFuncionAutomatica(peliculaId: number, dias: string[], horaInicio: string, precio: number, usuarioAdmin: string = 'Admin'): Promise<{ exito: boolean; mensaje: string }> {
+  async crearFuncionAutomatica(
+    peliculaId: number, 
+    dias: string[], 
+    horaInicio: string, 
+    precio: number, 
+    formato: string = '2D', 
+    idioma: string = 'Castellano', 
+    usuarioAdmin: string = 'admin@cine.com'
+  ): Promise<{ exito: boolean; mensaje: string }> {
     const pelicula = this.peliculas().find(p => p.id === peliculaId);
     if (!pelicula) return { exito: false, mensaje: 'Película no encontrada' };
 
@@ -295,7 +500,9 @@ export class CineService {
           dias: dias,
           hora_inicio: horaInicio,
           hora_fin: horaFinStr,
-          precio: precio
+          precio: precio,
+          formato: formato,
+          idioma: idioma
         };
 
         const { data, error } = await this.supabase
@@ -316,7 +523,9 @@ export class CineService {
             dias,
             horaInicio,
             horaFin: horaFinStr,
-            precio
+            precio,
+            formato, 
+            idioma   
           };
           this.funciones.update(l => [...l, nuevaFuncion]);
           this.registrarLog('CREACION_FUNCION', usuarioAdmin, `Creó función para ${pelicula.nombre} en Sala ${sala}`);
@@ -327,27 +536,49 @@ export class CineService {
     return { exito: false, mensaje: 'No hay salas disponibles en los días y horarios seleccionados.' };
   }
 
-  validarCodigoQr(codigo: string, tipo: 'entrada' | 'candy', empleadoEmail: string = 'Empleado'): { exito: boolean; mensaje: string } {
-    const ticket = this.tickets().find(t => t.codigoQr.toLowerCase() === codigo.trim().toLowerCase());
+  validarCodigoQr(codigo: string, tipo: 'entrada' | 'candy', empleadoEmail: string = 'empleado@cine.com'): { exito: boolean; mensaje: string } {
+    const listaActual = this.tickets();
+    const ticket = listaActual.find(t => t.codigoQr.toLowerCase() === codigo.trim().toLowerCase());
     
     if (!ticket) return { exito: false, mensaje: 'Código QR no encontrado.' };
     if (ticket.estado === 'CANCELADO') return { exito: false, mensaje: 'Entrada DENEGADA: La reserva fue cancelada.' };
 
     if (tipo === 'entrada') {
       if (ticket.validadoEntrada) return { exito: false, mensaje: 'Entrada DENEGADA: El QR ya fue utilizado.' };
-      ticket.validadoEntrada = true;
+      
+      this.tickets.update(lista => {
+        const actualizados = lista.map(t => t.id === ticket.id ? { ...t, validadoEntrada: true } : t);
+        this.guardarTicketsEnStorage(actualizados);
+        return actualizados;
+      });
+
       this.registrarLog('VALIDACION_QR_ENTRADA', empleadoEmail, `Validó entrada QR ${ticket.codigoQr} (${ticket.peliculaNombre})`);
       return { exito: true, mensaje: `Entrada VALIDADA para ${ticket.peliculaNombre}.` };
     } else {
       if (ticket.validadoCandy) return { exito: false, mensaje: 'Candy Bar DENEGADO: El pedido ya fue entregado.' };
-      ticket.validadoCandy = true;
+      
+      this.tickets.update(lista => {
+        const actualizados = lista.map(t => t.id === ticket.id ? { ...t, validadoCandy: true } : t);
+        this.guardarTicketsEnStorage(actualizados);
+        return actualizados;
+      });
+
       this.registrarLog('VALIDACION_QR_CANDY', empleadoEmail, `Entregó pedido Candy QR ${ticket.codigoQr}`);
-      return { exito: true, mensaje: `Candy Bar ENTREGADO: ${ticket.productosCandy.join(', ')}.` };
+      
+      const detalleCandy = ticket.productosCandy.length > 0 
+        ? ticket.productosCandy.join(', ') 
+        : 'Sin productos de Candy Bar seleccionados';
+
+      return { exito: true, mensaje: `Candy Bar ENTREGADO: ${detalleCandy}.` };
     }
   }
 
   acumularPuntos(montoGastado: number) {
-    this.puntosUsuario.update(p => p + Math.floor(montoGastado));
+    this.puntosUsuario.update(p => {
+      const nuevo = p + Math.floor(montoGastado);
+      this.guardarPuntosEnStorage(nuevo);
+      return nuevo;
+    });
   }
 
   canjearRecompensa(recompensaId: number, usuarioEmail: string): { exito: boolean; mensaje: string } {
@@ -358,7 +589,11 @@ export class CineService {
       return { exito: false, mensaje: 'Puntos insuficientes para realizar este canje.' };
     }
 
-    this.puntosUsuario.update(p => p - recompensa.puntosRequeridos);
+    this.puntosUsuario.update(p => {
+      const nuevo = p - recompensa.puntosRequeridos;
+      this.guardarPuntosEnStorage(nuevo);
+      return nuevo;
+    });
 
     const nuevoCanje: Canje = {
       id: Date.now(),
@@ -368,19 +603,24 @@ export class CineService {
       fecha: new Date().toISOString().split('T')[0]
     };
 
-    this.historialCanjes.update(h => [nuevoCanje, ...h]);
+    this.historialCanjes.update(h => {
+      const nuevoHistorial = [nuevoCanje, ...h];
+      this.guardarHistorialDeStorage(nuevoHistorial);
+      return nuevoHistorial;
+    });
+
     this.registrarLog('CANJE_PUNTOS', usuarioEmail, `Canjeó recompensa: ${recompensa.nombre}`);
     return { exito: true, mensaje: `¡Canjeaste exitosamente: ${recompensa.nombre}!` };
   }
 
-  actualizarPuntosRecompensa(recompensaId: number, nuevosPuntos: number, usuarioAdmin: string = 'Admin') {
+  actualizarPuntosRecompensa(recompensaId: number, nuevosPuntos: number, usuarioAdmin: string = 'admin@cine.com') {
     this.recompensas.update(lista =>
       lista.map(r => r.id === recompensaId ? { ...r, puntosRequeridos: nuevosPuntos } : r)
     );
     this.registrarLog('MODIFICACION_RECOMPENSA', usuarioAdmin, `Actualizó costo de recompensa #${recompensaId} a ${nuevosPuntos} puntos`);
   }
 
-  crearComboEspecial(nombre: string, descripcion: string, precio: number, usuarioAdmin: string = 'Admin') {
+  crearComboEspecial(nombre: string, descripcion: string, precio: number, usuarioAdmin: string = 'admin@cine.com') {
     const nuevoCombo: ComboEspecial = { id: Date.now(), nombre, descripcion, precio };
     this.combosEspeciales.update(lista => [...lista, nuevoCombo]);
     this.registrarLog('CREACION_COMBO', usuarioAdmin, `Creó nuevo combo especial: ${nombre}`);

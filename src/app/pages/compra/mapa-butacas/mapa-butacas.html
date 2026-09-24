@@ -46,6 +46,7 @@
         @for (col of obtenerColumnasPorFila(fila).colDerecha; track col) {
           <button 
             [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
+            [class.seleccionada]="isSeleccionada(fila, col)"
             [class.discapacidad]="esFilaDiscapacidad(fila)"
             [class.vip]="esFilaVIP(fila)"
             (click)="seleccionarButaca(fila, col)">

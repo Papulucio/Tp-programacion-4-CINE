@@ -18,11 +18,38 @@
   font-weight: bold;
 }
 
+.mapa-sala {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 10px;
+}
+
 .fila-asientos {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 15px;
   margin-bottom: 6px;
+  width: 100%;
+}
+
+.letra-fila {
+  font-weight: bold;
+  width: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.bloque-columnas {
+  display: flex;
+  gap: 4px;
+}
+
+.bloque-columnas.centro {
+  margin: 0 10px;
 }
 
 .fila-discapacidad {
@@ -47,15 +74,24 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  opacity: 0.85;
 }
 
 button.ocupada {
-  background-color: #e53935;
+  background-color: #e53935 !important;
+  color: white !important;
+  border-color: #c62828 !important;
   cursor: not-allowed;
 }
 
 button.discapacidad {
   background-color: #2196f3;
+  border-color: #0d47a1;
 }
 
 button.vip {
@@ -66,4 +102,18 @@ button.vip {
 
 button.vip:hover {
   background-color: #e6c200;
+}
+
+button.seleccionada {
+  background-color: #2e7d32 !important; 
+  color: white !important;
+  border: 2px solid #1b5e20 !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+button.vip.seleccionada {
+  background-color: #ff8f00 !important; 
+  color: white !important;
+  border: 2px solid #e65100 !important;
 }

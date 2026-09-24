@@ -1,11 +1,47 @@
 <div style="padding: 20px; max-width: 1000px; margin: 0 auto; font-family: sans-serif;">
   <h2>Panel de Administración</h2>
 
+  <!-- SECCIÓN: ESTADÍSTICAS Y GRÁFICOS (Películas más vistas y Candy) -->
+  <section style="background: #eef2f7; padding: 15px; border: 1px solid #d0d7de; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Estadísticas y Métricas del Cine</h3>
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- Películas más vistas por semana -->
+      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
+        <h4 style="margin-top: 0; color: #0366d6;">📊 Más Vistas (Semana)</h4>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li *ngFor="let item of peliculasMasVistasSemana">
+            {{ item.pelicula }}: <strong>{{ item.cantidad }} entradas</strong>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Películas más vistas por mes -->
+      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
+        <h4 style="margin-top: 0; color: #28a745;">📈 Más Vistas (Mes)</h4>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li *ngFor="let item of peliculasMasVistasMes">
+            {{ item.pelicula }}: <strong>{{ item.cantidad }} entradas</strong>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Producto Candy Más Vendido -->
+      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
+        <h4 style="margin-top: 0; color: #d73a49;">🍿 Candy Más Vendido</h4>
+        <div style="text-align: center; margin-top: 15px;" *ngIf="productoCandyMasVendido">
+          <span style="font-size: 16px; font-weight: bold; color: #24292e;">{{ productoCandyMasVendido.nombre }}</span><br>
+          <span style="font-size: 14px; color: #586069;">Unidades vendidas: <strong>{{ productoCandyMasVendido.cantidad }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- SECCIÓN: CUPONES DE DESCUENTO -->
   <section style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
     <h3>Configuración de Cupones de Descuento</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
       <input type="text" placeholder="Código (ej: SENIOR30)" [(ngModel)]="nuevoCodigo" style="padding: 8px;" />
       <input type="number" placeholder="% Descuento" [(ngModel)]="nuevoPorcentaje" min="1" max="100" style="padding: 8px; width: 100px;" />
       <label style="display: flex; align-items: center; gap: 5px;">
@@ -27,6 +63,66 @@
     </ul>
   </section>
 
+  <!-- SECCIÓN: REPORTE DE FACTURACIÓN Y EXPORTACIÓN (PDF / Excel) -->
+  <section style="background: #e2f0d9; padding: 15px; border: 1px solid #c8e1b9; border-radius: 8px; margin-bottom: 25px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h3 style="margin: 0;">Reporte de Facturación y Entradas Vendidas por Día</h3>
+      <div style="display: flex; gap: 10px;">
+        <button (click)="exportarPDF()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar PDF</button>
+        <button (click)="exportarExcel()" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar Excel</button>
+      </div>
+    </div>
+
+    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left; background: white;">
+      <thead>
+        <tr style="background: #d4edda;">
+          <th>Fecha</th>
+          <th>Entradas Vendidas</th>
+          <th>Total Facturado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let reporte of reporteFacturacionDiaria">
+          <td>{{ reporte.fecha }}</td>
+          <td><strong>{{ reporte.entradasVendidas }}</strong></td>
+          <td><strong>${{ reporte.totalFacturado }}</strong></td>
+        </tr>
+        <tr *ngIf="reporteFacturacionDiaria.length === 0">
+          <td colspan="3" style="text-align: center; color: #666; padding: 10px;">No hay registros de ventas todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECCIÓN: CONFIGURACIÓN DE PREVENTA (NUEVO REQUERIMIENTO 08/03) -->
+  <section style="background: #fff0f3; padding: 15px; border: 1px solid #ffccd5; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Sistema de Preventa (Precio Especial 7 días antes)</h3>
+    <p style="font-size: 0.9em; color: #666;">Configure la preventa de entradas de forma individual por cada película.</p>
+
+    <div style="margin-bottom: 10px;">
+      <label>Seleccionar Película: </label>
+      <select [(ngModel)]="peliculaPreventaId" style="padding: 8px; width: 100%;">
+        <option [ngValue]="null">-- Seleccionar Película --</option>
+        <option *ngFor="let p of cineService.getPeliculas()" [value]="p.id">{{ p.nombre }}</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+      <div style="flex: 1;">
+        <label>Precio Especial de Preventa ($): </label>
+        <input type="number" [(ngModel)]="precioEspecialPreventa" style="padding: 8px; width: 100%;" />
+      </div>
+      <div style="flex: 1;">
+        <label>Fecha de Inicio de Preventa: </label>
+        <input type="date" [(ngModel)]="fechaInicioPreventaStr" style="padding: 8px; width: 100%;" />
+      </div>
+    </div>
+
+    <button (click)="configurarPreventa()" style="padding: 10px 20px; background: #e83e8c; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">
+      Guardar Configuración de Preventa
+    </button>
+  </section>
+
   <!-- SECCIÓN: PROGRAMACIÓN DE FUNCIONES -->
   <section style="background: #eef6ff; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
     <h3>Programar Función (Asignación Automática de Sala)</h3>
@@ -39,9 +135,28 @@
       </select>
     </div>
 
+    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+      <div style="flex: 1;">
+        <label>Formato: </label>
+        <select [(ngModel)]="formatoSeleccionado" style="padding: 8px; width: 100%;">
+          <option value="2D">2D</option>
+          <option value="3D">3D</option>
+          <option value="4D">4D</option>
+          <option value="5D">5D</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <label>Idioma: </label>
+        <select [(ngModel)]="idiomaSeleccionado" style="padding: 8px; width: 100%;">
+          <option value="Castellano">Castellano</option>
+          <option value="Subtitulada">Subtitulada</option>
+        </select>
+      </div>
+    </div>
+
     <div style="margin-bottom: 10px;">
       <label>Días de Proyección: </label>
-      <div style="display: flex; gap: 10px; margin-top: 5px;">
+      <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
         <button *ngFor="let dia of diasSemana" 
                 type="button" 
                 (click)="toggleDia(dia)"
@@ -52,14 +167,23 @@
       </div>
     </div>
 
-    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-      <div>
-        <label>Hora Inicio: </label>
-        <input type="time" [(ngModel)]="horaInicio" style="padding: 6px;" />
+    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 250px;">
+        <label>Horario de Inicio: </label>
+        <div style="display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap;">
+          <button *ngFor="let h of ['14:00', '16:30', '19:00', '21:30', '23:45']" 
+                  type="button" 
+                  (click)="horaInicio = h"
+                  [style.background]="horaInicio === h ? '#007bff' : '#e9ecef'"
+                  [style.color]="horaInicio === h ? 'white' : '#333'"
+                  style="border: 1px solid #ced4da; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+            {{ h }} hs
+          </button>
+        </div>
       </div>
       <div>
         <label>Precio Entrada ($): </label>
-        <input type="number" [(ngModel)]="precioFuncion" style="padding: 6px;" />
+        <input type="number" [(ngModel)]="precioFuncion" style="padding: 6px; width: 120px;" />
       </div>
     </div>
 
@@ -79,6 +203,7 @@
       <thead>
         <tr style="background: #eee;">
           <th>Película ID</th>
+          <th>Formato / Idioma</th>
           <th>Sala</th>
           <th>Días</th>
           <th>Horario (Inicio - Fin + 30m)</th>
@@ -88,6 +213,7 @@
       <tbody>
         <tr *ngFor="let f of cineService.getFunciones()">
           <td>{{ f.peliculaId }}</td>
+          <td><strong>{{ f.formato }}</strong> - {{ f.idioma }}</td>
           <td><strong>Sala {{ f.salaId }}</strong></td>
           <td>{{ f.dias.join(', ') }}</td>
           <td>{{ f.horaInicio }} hs a {{ f.horaFin }} hs</td>
@@ -101,12 +227,12 @@
   <section style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px;">
     <h3>Gestión de Candy Bar</h3>
     
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
       <input 
         type="text" 
         placeholder="Nombre del Producto" 
         [(ngModel)]="nuevoProductoNombre"
-        style="padding: 8px;"
+        style="padding: 8px; flex: 1;"
       >
       
       <select [(ngModel)]="nuevoProductoCategoria" style="padding: 8px;">
@@ -149,11 +275,10 @@
     </table>
   </section>
 
-  <!-- NUEVA SECCIÓN MAIL 7: FIDELIZACIÓN Y COMBOS -->
-  <section style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px;">
-    <h3>Programa de Fidelización y Combos Especiales (Mail 7)</h3>
+  <!-- SECCIÓN: FIDELIZACIÓN Y COMBOS -->
+  <section style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 25px;">
+    <h3>Programa de Fidelización y Combos Especiales</h3>
 
-    <!-- 1. Costo de Recompensas en Puntos -->
     <div style="margin-bottom: 20px;">
       <h4>Configurar Costo de Recompensas (Puntos)</h4>
       <p style="font-size: 0.9em; color: #666;">Los usuarios acumulan 1 punto por cada $1 gastado.</p>
@@ -173,10 +298,9 @@
 
     <hr style="border: 0; border-top: 1px solid #e2d3a7; margin: 15px 0;">
 
-    <!-- 2. Crear Combos Especiales -->
     <div>
       <h4>Crear Combo Especial</h4>
-      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
         <input type="text" placeholder="Nombre (ej: Combo Pareja)" [(ngModel)]="nuevoComboNombre" style="padding: 8px; flex: 1;" />
         <input type="text" placeholder="Descripción (ej: 2 Entradas + Pochoclo)" [(ngModel)]="nuevoComboDescripcion" style="padding: 8px; flex: 2;" />
         <input type="number" placeholder="Precio ($)" [(ngModel)]="nuevoComboPrecio" style="padding: 8px; width: 100px;" />
@@ -199,6 +323,31 @@
             <td><strong>{{ combo.nombre }}</strong></td>
             <td>{{ combo.descripcion }}</td>
             <td>${{ combo.precio }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECCIÓN: LOG DE ACTIVIDAD DEL SISTEMA -->
+  <section style="background: #2d3748; color: white; padding: 15px; border-radius: 8px;">
+    <h3 style="margin-top: 0; color: #e2e8f0;">📋 Log de Actividad del Sistema</h3>
+    <p style="font-size: 13px; color: #a0aec0; margin-bottom: 15px;">Registro detallado de acciones administrativas y validaciones (creación de funciones, cambios de precios, validación de QRs).</p>
+
+    <div style="max-height: 220px; overflow-y: auto; background: #1a202c; padding: 10px; border-radius: 6px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid #4a5568; color: #cbd5e0;">
+            <th style="padding: 6px;">Fecha y Hora</th>
+            <th style="padding: 6px;">Usuario</th>
+            <th style="padding: 6px;">Acción Realizada</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of logActividad" style="border-bottom: 1px solid #2d3748;">
+            <td style="padding: 6px; color: #a0aec0; white-space: nowrap;">{{ log.fechaHora }}</td>
+            <td style="padding: 6px; color: #63b3ed;">{{ log.usuario }}</td>
+            <td style="padding: 6px; color: #e2e8f0;">{{ log.accion }}</td>
           </tr>
         </tbody>
       </table>
