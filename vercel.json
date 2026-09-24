@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "dist/tp-programacion-4-cine/browser",
+  "outputDirectory": "dist/tp-cine/browser",
   "rewrites": [
     {
       "source": "/(.*)",
