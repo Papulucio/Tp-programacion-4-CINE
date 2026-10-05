@@ -1,92 +1,122 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { CineService, Ticket } from '../../services/cine';
-import jsPDF from 'jspdf';
-import * as QRCode from 'qrcode';
+import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { CineService } from '../../services/cine.service';
+import { Ticket } from '../../models/ticket';
+import { QrCodeComponent } from '../../components/qr-code/qr-code';
+import { descargarTicketPDF } from '../../core/utils/exportar';
+import { formatearFechaHora, formatearMoneda, horasHasta } from '../../core/utils/fecha.util';
 
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './perfil.html'
+  imports: [RouterLink, QrCodeComponent],
+  templateUrl: './perfil.html',
 })
 export class PerfilComponent {
-  cineService = inject(CineService);
-  usuarioEmail = 'test@cine.com';
-  mensaje = '';
+  readonly auth = inject(AuthService);
+  readonly cine = inject(CineService);
 
-  get puntos() {
-    return this.cineService.getPuntosUsuario();
+  readonly mensaje = signal('');
+  readonly error = signal('');
+  readonly exportando = signal(false);
+  readonly ticketAmpliado = signal<Ticket | null>(null);
+
+  readonly usuario = this.auth.usuarioActual;
+  readonly tickets = this.cine.ticketsUsuario;
+  readonly canjes = this.cine.canjesUsuario;
+  readonly recompensas = this.cine.getRecompensas;
+  readonly puntos = this.cine.puntosUsuario;
+  readonly credito = this.cine.creditoUsuario;
+
+  /** Tickets todavía cancelables (regla de las 2 horas, mail del 10/03). */
+  readonly ticketsCancelables = computed(() =>
+    this.tickets().filter((t) => t.estado === 'ACTIVO' && horasHasta(t.fechaHoraFuncion) >= 2),
+  );
+
+  readonly proximosEstrenos = computed(() =>
+    this.cine.peliculasProximamente().filter((p) => this.auth.tieneAlerta(p.id)),
+  );
+
+  formatear(monto: number): string {
+    return formatearMoneda(monto);
   }
 
-  get recompensas() {
-    return this.cineService.getRecompensas();
+  fecha(iso: string): string {
+    return formatearFechaHora(iso);
   }
 
-  get historial() {
-    return this.cineService.getHistorialCanjes();
+  horasRestantes(ticket: Ticket): string {
+    const horas = horasHasta(ticket.fechaHoraFuncion);
+    if (horas < 0) return 'La función ya pasó';
+    if (horas < 2) return `Faltan ${horas.toFixed(1)} h: ya no se puede cancelar`;
+    return `Faltan ${Math.floor(horas)} h ${Math.round((horas % 1) * 60)} min`;
   }
 
-  get credito() {
-    return this.cineService.getCreditoUsuario();
+  puedeCancelar(ticket: Ticket): boolean {
+    return ticket.estado === 'ACTIVO' && horasHasta(ticket.fechaHoraFuncion) >= 2;
   }
 
-  get misTickets(): Ticket[] {
-    return this.cineService.getTickets().filter(t => t.usuarioEmail === this.usuarioEmail);
-  }
+  cancelar(ticket: Ticket): void {
+    this.error.set('');
+    this.mensaje.set('');
 
-  get misPeliculas(): string[] {
-    const ticketsUsuario = this.misTickets;
-    const peliculas = ticketsUsuario.map(t => t.peliculaNombre);
-    return Array.from(new Set(peliculas)); 
-  }
-
-  canjear(recompensaId: number) {
-    const res = this.cineService.canjearRecompensa(recompensaId, this.usuarioEmail);
-    this.mensaje = res.mensaje;
-  }
-
-  cancelarReserva(ticketId: number) {
-    const ticket = this.misTickets.find(t => t.id === ticketId);
-    if (!ticket) {
-      this.mensaje = 'No se encontró el ticket seleccionado.';
+    const resultado = this.cine.cancelarReserva(ticket.id);
+    if (!resultado.exito) {
+      this.error.set(resultado.mensaje);
       return;
     }
-
-    // VALIDACIÓN DE 2 HORAS ANTES DE LA FUNCIÓN
-    if (ticket.fechaHoraFuncion) {
-      const fechaFuncion = new Date(ticket.fechaHoraFuncion).getTime();
-      const horaActual = new Date().getTime();
-      const diferenciaHoras = (fechaFuncion - horaActual) / (1000 * 60 * 60);
-
-      if (diferenciaHoras < 2) {
-        this.mensaje = 'No es posible cancelar la reserva: falta menos de 2 horas para el inicio de la función.';
-        return;
-      }
-    }
-
-    // Procesa la cancelación y acreditación de saldo en el servicio
-    const res = this.cineService.cancelarReserva(ticketId, this.usuarioEmail);
-    this.mensaje = res.mensaje || `Reserva cancelada con éxito. Se acreditaron $${ticket.montoTotal} en tu saldo de crédito.`;
+    this.mensaje.set(resultado.mensaje);
   }
 
-  async descargarPDF(ticket: any) {
-    const doc = new jsPDF();
-    const codigoEntrada = ticket.codigoQr || `CINE-${ticket.id}`;
-    
-    const qrDataUrl = await QRCode.toDataURL(codigoEntrada, { width: 150 });
+  canjear(recompensaId: number): void {
+    this.error.set('');
+    this.mensaje.set('');
 
-    doc.setFontSize(22);
-    doc.text('CineApp - Entrada Digital', 20, 25);
+    const resultado = this.cine.canjearRecompensa(recompensaId);
+    if (!resultado.exito) {
+      this.error.set(resultado.mensaje);
+      return;
+    }
+    this.mensaje.set(resultado.mensaje);
+    if (resultado.ticket) this.ticketAmpliado.set(resultado.ticket);
+  }
 
-    doc.setFontSize(14);
-    doc.text(`Película: ${ticket.peliculaNombre}`, 20, 45);
-    doc.text(`Función: ${ticket.frecuencia}`, 20, 55);
-    doc.text(`Monto Pagado: $${ticket.montoTotal}`, 20, 65);
-    doc.text(`Código de Ticket: ${codigoEntrada}`, 20, 75);
+  verTicket(ticket: Ticket): void {
+    this.ticketAmpliado.set(ticket);
+  }
 
-    doc.addImage(qrDataUrl, 'PNG', 20, 85, 60, 60);
+  /** Ticket en PDF con el QR incluido, para imprimirlo o compartirlo. */
+  async descargarTicket(ticket: Ticket): Promise<void> {
+    this.error.set('');
+    this.exportando.set(true);
+    try {
+      await descargarTicketPDF(`ticket-${ticket.codigoQr}.pdf`, {
+        codigoQr: ticket.codigoQr,
+        pelicula: ticket.peliculaNombre,
+        funcion: ticket.frecuencia,
+        fechaFuncion: formatearFechaHora(ticket.fechaHoraFuncion),
+        sala: ticket.salaId ? `Sala ${ticket.salaId}` : '—',
+        butacas: ticket.butacas.map((b) => `${b.etiqueta} (${b.tipo})`),
+        candy: ticket.productosCandy.map((c) => `${c.cantidad} x ${c.nombre}`),
+        total: formatearMoneda(ticket.montoTotal),
+        estado: ticket.estado,
+      });
+      this.mensaje.set('Ticket descargado en PDF.');
+    } catch (error) {
+      this.error.set(`No se pudo generar el PDF: ${String(error)}`);
+    } finally {
+      this.exportando.set(false);
+    }
+  }
 
-    doc.save(`Entrada_${codigoEntrada}.pdf`);
+  cerrarTicket(): void {
+    this.ticketAmpliado.set(null);
+  }
+
+  totalGastado(): number {
+    return this.tickets()
+      .filter((t) => t.estado === 'ACTIVO')
+      .reduce((acc, t) => acc + t.montoTotal, 0);
   }
 }

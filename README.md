@@ -1,49 +1,113 @@
-# TpCine - Sistema de Gestión Cinematográfica (PWA)
+# TP Programación IV · Cine
 
-Aplicación web progresiva (PWA) desarrollada en Angular para la administración integral, venta de entradas, combos de Candy Bar y mapa de butacas en tiempo real para salas de cine.
+Aplicación web de un cine: cartelera, compra de entradas con selección de butacas,
+candy bar, combos, cupones, fidelización por puntos, panel de administración con
+reportes y validación de entradas por QR.
 
-## Enlaces del Proyecto
-- **Repositorio GitHub:** [https://github.com/Papulucio/Tp-programacion-4-CINE](https://github.com/Papulucio/Tp-programacion-4-CINE)
-- **Aplicación en Producción (Vercel):** [https://tp-programacion-4-cine.vercel.app](https://tp-programacion-4-cine.vercel.app)
+- **Angular** 22 (standalone, signals, control flow con `@if` / `@for`)
+- **Supabase** como persistencia remota de funciones y butacas, con respaldo en
+  `localStorage` para que la app siga funcionando si la red falla
+- **PWA** instalable y operable sin conexión
 
----
+## Puesta en marcha
 
-## Arquitectura y Decisiones Técnicas
+```bash
+npm install
+npm start        # servidor de desarrollo en http://localhost:4200
+npm run build    # build de producción en dist/tp-cine
+npm test         # suite de tests (Vitest)
+```
 
-### 1. Frontend: Angular 19+
-- **Standalone Components:** Estructura modular sin necesidad de `NgModule`, reduciendo el acoplamiento y mejorando los tiempos de carga.
-- **Signals & Reactive State:** Manejo del estado reactivo del mapa de butacas, el carrito de compras y la sesión del usuario.
-- **Service Worker & PWA:** Implementación de `@angular/service-worker` con manifiesto web (`manifest.webmanifest`) para permitir la instalación de la app como ejecutable nativo.
+## Cuentas de demostración
 
-### 2. Backend & Base de Datos: Supabase
-- **PostgreSQL & Row Level Security (RLS):** Persistencia de datos de usuarios, funciones, auditoría de logs y transacciones.
-- **Realtime Subscriptions:** Actualización en tiempo real de la selección de butacas entre múltiples usuarios simultáneos.
+| Rol | Usuario | Contraseña |
+| --- | --- | --- |
+| Administrador | `admin@cine.com` | `admin123` |
+| Empleado (boletería) | `empleado@cine.com` | `empleado123` |
+| Cliente | `cliente@cine.com` | `cliente123` |
+| Cliente senior (+13) | `senior@cine.com` | `senior123` |
 
-### 3. Asignación Automática de Salas
-Algoritmo en frontend/backend que valida el horario de cada función disponible garantizando que no existan solapamientos entre proyecciones en una misma sala, contemplando la duración exacta del film más 30 minutos obligatorios de sanitización e intervalo.
+También se puede comprar sin registrado: en ese caso el ticket queda asociado al
+usuario anónimo y no se acumulan puntos.
 
----
+## Reglas de negocio implementadas
 
-## Funcionalidades Principales
+- **Butacas**: 19 filas por sala. 18 filas de 28 butacas y una fila adaptada de 14.
+  La distribución parte de A–T, se elimina la fila K y J queda como fila adaptada:
+  **518 butacas por sala**. Las filas R, S y T son VIP con recargo.
+- **Funciones**: entre dos funciones de la misma sala hay una separación mínima de
+  30 minutos contados desde el final de la película.
+- **Clasificación etaria**: solo `0`, `13` y `18`. Las películas restringidas bloquean la
+  compra de menores sin tutor y de compras anónimas.
+- **Preventa**: se abre 7 días antes del estreno, con precio propio y aviso en la app.
+- **Compra anónima**: permitida salvo en películas con clasificación etaria.
+- **Cancelación**: hasta 2 horas antes de la función. No se devuelve dinero: se
+  acredita el saldo en la cuenta del cliente.
+- **Cupones**: cupón de primera compra (20%), cupones con descuento porcentual,
+  límite de edad, de primera compra y de cantidad de usos.
+- **Fidelización**: 1 punto por cada peso gastado, con recompensas canjeables que
+  generan un ticket con QR propio.
+- **QR**: cada ticket tiene un código único. Sirve tanto para el ingreso como para
+  retirar el candy bar, y se dibuja como SVG real para que la cámara lo lea.
 
-1. **Cartelera e Interacción:**
-   - Top 3 de películas más vistas.
-   - Buscador por texto y filtrado por múltiples géneros.
-   - Restricción de compra según la edad verificada del usuario.
+## Estructura
 
-2. **Mapa de Butacas en Tiempo Real:**
-   - Identificación visual de butacas Estándar, Adaptadas para Discapacidad (Filas J y K) y VIP (Filas R, S y T).
-   - Bloqueo de asientos seleccionados en tiempo real.
+```
+src/app
+├── core
+│   ├── guards/rol.guard.ts     sesionGuard, adminGuard, empleadoGuard
+│   ├── services/               storage.service.ts (localStorage tipado)
+│   └── utils/                  fecha.util.ts, exportar.ts (CSV / Excel / PDF)
+├── models/                     sala, funcion, pelicula, ticket, cupon, fidelizacion...
+├── services/
+│   ├── auth.service.ts         registro, login, roles, alertas de estreno
+│   ├── cine.service.ts         dominio: butacas, funciones, compras, reportes, bitácora
+│   └── supabase.ts             cliente remoto tolerante a fallos
+├── components/                 pelicula-card, qr-code
+└── pages/                      home, login, registro, compra, perfil, admin, empleado
+```
 
-3. **Candy Bar, Cupones y Fidelización:**
-   - Venta individual y combos especiales de snacks/bebidas.
-   - Descuentos dinámicos, cupón de bienvenida y cupones para mayores de 50 años.
-   - Sistema de fidelización con acumulación de 1 punto por peso consumido y catálogo de canje.
+## Reportes y facturación
 
-4. **Entradas PDF y Validación por QR:**
-   - Emisión automática de comprobante PDF con código QR.
-   - Módulo de escaneo para empleados con invalidación de un solo uso.
+El panel de administración incluye facturación diaria y mensual, ocupación por sala,
+top de películas por semana y por mes, productos de candy más vendidos y bitácora de
+operaciones. Todo se exporta en **PDF**, **Excel** y **CSV**. Las librerías de PDF y
+Excel se cargan de forma diferida (`import()` dinámico), así que no forman parte del
+bundle inicial.
 
-5. **Panel Administrativo:**
-   - Reportes de facturación exportables a PDF y Excel.
-   - Log de auditoría con registro de fecha y hora de cada acción crítica.
+Desde el perfil del cliente se puede descargar el **ticket en PDF** con el QR
+impreso para presentarlo en la boletería.
+
+## Persistencia
+
+- `localStorage` con el prefijo `tpcine:` guarda películas, salas, funciones, butacas,
+  productos, cupones, combos, tickets, usuarios, canjes y bitácora.
+- Supabase guarda funciones y reservas de butacas. Si la tabla no existe o la red
+  falla, el servicio marca la conexión como caída y la app sigue con los datos
+  locales: nunca se corta una compra por un error de red.
+
+## PWA
+
+`ngsw-config.json` cachea el shell de la aplicación y las imágenes de las películas. Las
+llamadas a Supabase usan estrategia de red con respaldo en caché. El service worker
+solo se registra en builds de producción.
+
+## Tests
+
+131 tests en 15 suites, sobre Vitest:
+
+```
+src/app/app.spec.ts                              shell y navegación
+src/app/core/core.spec.ts                        guards y reglas transversales
+src/app/core/services/storage.service.spec.ts    persistencia
+src/app/services/cine.service.spec.ts            dominio, compras, QR, reportes
+src/app/services/auth.service.spec.ts            registro, login, edad, preventa
+src/app/services/supabase.spec.ts                cliente remoto
+src/app/components/qr-code/qr-code.spec.ts       generación del QR
+src/app/components/pelicula-card/…               tarjeta de película
+src/app/pages/…                                  una suite por pantalla
+```
+
+Los tests no tocan la red: `src/app/testing/supabase.stub.ts` reemplaza el cliente
+remoto por un doble que devuelve `null`, que es exactamente lo que hace el servicio
+real cuando la tabla no existe.

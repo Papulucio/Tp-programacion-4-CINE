@@ -1,59 +1,49 @@
-<div class="pantalla-cine">PANTALLA</div>
-
-@if (!esAptoParaEdad) {
-  <div class="alerta-edad" style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-    ⚠️ Película con restricción (+{{ peliculaActual?.clasificacion_edad || 18 }} años). Recuerde que menores deben ir acompañados por un adulto.
-  </div>
-} @else {
-  <div class="alerta-edad" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-    ✓ Edad verificada (+{{ peliculaActual?.clasificacion_edad || 18 }} años). Sos mayor de edad para ver esta película.
-  </div>
+@if (aviso()) {
+  <p class="alerta">{{ aviso() }}</p>
 }
 
-<div class="mapa-sala">
-  @for (fila of filas; track fila) {
-    <div class="fila-asientos" 
-         [class.fila-discapacidad]="esFilaDiscapacidad(fila)"
-         [class.fila-vip]="esFilaVIP(fila)">
-      
-      <span class="letra-fila">{{ fila }}</span>
+<div class="pantalla">
+  <div class="pantalla__linea"></div>
+  <span class="pantalla__texto">Pantalla</span>
+</div>
 
-      <div class="bloque-columnas">
-        @for (col of obtenerColumnasPorFila(fila).colIzquierda; track col) {
-          <button 
-            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
-            [class.discapacidad]="esFilaDiscapacidad(fila)"
-            [class.vip]="esFilaVIP(fila)"
-            (click)="seleccionarButaca(fila, col)">
-            {{ col }}
-          </button>
-        }
-      </div>
+<div class="mapa">
+  @for (fila of filas(); track fila.letra) {
+    <div class="mapa__fila" [class.mapa__fila--vip]="fila.recargo > 0" [class.mapa__fila--adaptada]="fila.tipo === 'adaptada'">
+      <span class="mapa__letra" [title]="tipo(fila.letra) === 'adaptada' ? 'Fila adaptada' : tipo(fila.letra) === 'vip' ? 'Fila VIP' : 'Fila estándar'">
+        {{ fila.letra }}
+      </span>
 
-      <div class="bloque-columnas centro">
-        @for (col of obtenerColumnasPorFila(fila).colCentro; track col) {
-          <button 
-            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
-            [class.discapacidad]="esFilaDiscapacidad(fila)"
-            [class.vip]="esFilaVIP(fila)"
-            (click)="seleccionarButaca(fila, col)">
-            {{ col }}
-          </button>
-        }
-      </div>
-
-      <div class="bloque-columnas">
-        @for (col of obtenerColumnasPorFila(fila).colDerecha; track col) {
-          <button 
-            [class.ocupada]="butacasOcupadas().includes(fila + '-' + col)"
-            [class.seleccionada]="isSeleccionada(fila, col)"
-            [class.discapacidad]="esFilaDiscapacidad(fila)"
-            [class.vip]="esFilaVIP(fila)"
-            (click)="seleccionarButaca(fila, col)">
-            {{ col }}
+      <div class="mapa__butacas">
+        @for (numero of columnas(fila); track numero) {
+          <button
+            type="button"
+            class="butaca"
+            [class.butaca--vip]="fila.recargo > 0"
+            [class.butaca--adaptada]="fila.tipo === 'adaptada'"
+            [class.butaca--ocupada]="estaBloqueada(fila.letra, numero)"
+            [class.butaca--elegida]="estaSeleccionada(fila.letra, numero)"
+            [class.butaca--aislada]="esBloqueDerecho(fila, numero)"
+            [class.butaca--aislada-izq]="esBloqueIzquierdo(fila, numero)"
+            [disabled]="estaBloqueada(fila.letra, numero)"
+            (click)="alternar(fila, numero)"
+            [attr.aria-label]="'Butaca ' + fila.letra + numero"
+          >
+            {{ numero }}
           </button>
         }
       </div>
     </div>
+  }
+</div>
+
+<div class="leyenda">
+  <span><i class="punto punto--libre"></i> Libre</span>
+  <span><i class="punto punto--elegida"></i> Elegida ({{ totalSeleccionadas() }}/{{ maximo() }})</span>
+  <span><i class="punto punto--ocupada"></i> Occupada</span>
+  <span><i class="punto punto--vip"></i> VIP (+${{ precio('R') }})</span>
+  <span><i class="punto punto--adaptada"></i> Adaptada</span>
+  @if (totalSeleccionadas() > 0) {
+    <button type="button" class="boton boton--fantasma" (click)="limpiar()">Quitar selección</button>
   }
 </div>

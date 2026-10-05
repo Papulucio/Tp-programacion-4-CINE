@@ -1,79 +1,152 @@
-<div style="padding: 20px; font-family: sans-serif;">
-
-  <!-- LAS 3 PELÍCULAS MÁS VENDIDAS -->
-  <h2>🔥 Las 3 Películas Más Vendidas</h2>
-  <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-    @for (pelicula of cineService.peliculasMasVendidas(); track pelicula.id) {
-      <div style="border: 2px solid #ffc107; padding: 15px; border-radius: 8px; width: 220px; background: #fff8e1;">
-        <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" style="width: 100%; border-radius: 4px;" />
-        <h3>{{ pelicula.nombre }}</h3>
-        <p><strong>Formato:</strong> {{ pelicula.formato }} | {{ pelicula.idioma }}</p>
-        <p>⭐ Promedio: {{ obtenerDetallesResenia(pelicula.id).promedio }}</p>
-      </div>
-    }
+<section class="portada">
+  <div>
+    <h1>Tu cine, en un clic</h1>
+    <p>
+      Comprá entradas sin registrarte, agregá pochoclos y bebidas con el mismo QR y canjeá tus puntos.
+      Con cuenta además tenés 20% en tu primera compra y 1 punto por cada peso.
+    </p>
+    <div class="portada__acciones">
+      <a class="boton boton--primario" routerLink="/registro">Registrate y ganá 20%</a>
+      <a class="boton boton--fantasma" href="#cartelera">Ver cartelera</a>
+    </div>
   </div>
+  <ul class="portada__datos">
+    <li><strong>{{ cine.peliculasEnCartelera().length }}</strong> películas en cartelera</li>
+    <li><strong>{{ cine.getSalas().length }}</strong> salas · 518 butacas cada una</li>
+    <li><strong>{{ cine.totalButacas(1) }}</strong> butacas por sala</li>
+    <li><strong>1</strong> punto por peso gastado</li>
+  </ul>
+</section>
 
-  <hr />
-
-  <!-- SECCIÓN PRÓXIMAMENTE Y ALERTAS (NUEVO REQUERIMIENTO) -->
-  <h2>⏳ Próximamente en Cartelera</h2>
-  <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
-    @for (pelicula of peliculasProximas; track pelicula.id) {
-      <div style="border: 2px dashed #17a2b8; padding: 15px; border-radius: 8px; width: 220px; background: #e8f4f8;">
-        <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" style="width: 100%; border-radius: 4px;" />
-        <h3>{{ pelicula.nombre }}</h3>
-        <p>{{ pelicula.sinopsis }}</p>
-        <p>🏷️ {{ pelicula.generos.join(', ') }}</p>
-        <button 
-          (click)="activarAlerta(pelicula.nombre)"
-          style="width: 100%; padding: 8px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
-          🔔 Activar Alerta
-        </button>
+@if (cine.auth.estaLogueado()) {
+  <section class="panel panel--puntos">
+    <div>
+      <h2>Mi saldo</h2>
+      <p class="texto-suave">Hola, {{ cine.auth.nombreUsuario() }}.</p>
+    </div>
+    <div class="panel__cifras">
+      <div>
+        <span>Puntos</span>
+        <strong>{{ resumenPuntos() }}</strong>
       </div>
-    } @empty {
-      <p style="color: #666; font-style: italic;">No hay estrenos próximos programados por el momento.</p>
-    }
-  </div>
+      <div>
+        <span>Crédito</span>
+        <strong>{{ formatear(resumenCredito()) }}</strong>
+      </div>
+      <a class="boton boton--fantasma" routerLink="/perfil">Ver canjes y entradas</a>
+    </div>
+  </section>
+}
 
-  <hr />
-
-  <!-- CATÁLOGO DE PELÍCULAS -->
-  <h2>🎬 Catálogo de Películas</h2>
-  <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-    <input 
-      type="text" 
-      [(ngModel)]="busquedaTexto" 
-      placeholder="Buscar película..." 
-      style="padding: 8px; width: 250px;" 
-    />
-
-    <select [(ngModel)]="generoSeleccionado" style="padding: 8px;">
-      <option value="">Todos los géneros</option>
-      @for (genero of generosDisponibles; track genero) {
-        <option [value]="genero">{{ genero }}</option>
+<section id="cartelera" class="bloque">
+  <header class="bloque__cabecera">
+    <h2>Cartelera</h2>
+    <div class="filtros">
+      <input
+        type="search"
+        placeholder="Buscar por título, género o sinopsis"
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event)"
+      />
+      <select [ngModel]="generoElegido()" (ngModelChange)="generoElegido.set($event)">
+        <option value="">Todos los géneros</option>
+        @for (genero of generos(); track genero) {
+          <option [value]="genero">{{ genero }}</option>
+        }
+      </select>
+      @if (busqueda() || generoElegido()) {
+        <button type="button" class="boton boton--fantasma" (click)="limpiarFiltros()">Limpiar</button>
       }
-    </select>
-  </div>
+    </div>
+  </header>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-    @for (pelicula of peliculasFiltradas; track pelicula.id) {
-      <div style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 220px;">
-        <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" style="width: 100%; border-radius: 4px;" />
-        <h3>{{ pelicula.nombre }}</h3>
-        <p>{{ pelicula.sinopsis }}</p>
-        <p>⏱️ {{ pelicula.duracionMinutos }} min</p>
-        <p>🏷️ {{ pelicula.generos.join(', ') }}</p>
-        <p>⭐ Promedio: {{ obtenerDetallesResenia(pelicula.id).promedio }}</p>
-        
-       <button 
-        [routerLink]="['/compra', pelicula.id]" 
-        style="width: 100%; padding: 8px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Sacar Entradas
-      </button>
-      </div>
-    } @empty {
-      <p>No se encontraron películas que coincidan con la búsqueda.</p>
+  @if (cartelera().length === 0) {
+    <p class="alerta">No encontramos películas con esos filtros.</p>
+  }
+
+  <div class="grilla-peliculas">
+    @for (pelicula of cartelera(); track pelicula.id) {
+      <app-pelicula-card [pelicula]="pelicula" [mostrarAlerta]="true" />
     }
   </div>
+</section>
 
-</div>
+@if (top3().length > 0) {
+  <section class="bloque">
+    <h2>Lo más visto</h2>
+    <ol class="podio">
+      @for (pelicula of top3(); track pelicula.id) {
+        <li>
+          <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" />
+          <strong>{{ pelicula.nombre }}</strong>
+          <span>{{ pelicula.ventasTotales }} entradas</span>
+          <a class="boton boton--fantasma" [routerLink]="['/compra', pelicula.id]">Comprar</a>
+        </li>
+      }
+    </ol>
+  </section>
+}
+
+@if (proximamente().length > 0) {
+  <section class="bloque">
+    <h2>Próximamente y preventa</h2>
+    <p class="texto-suave">
+      La preventa se abre 7 días antes del estreno con precio especial. Marcá la alerta para recibir el
+      aviso desde la barra superior.
+    </p>
+    <div class="grilla-peliculas">
+      @for (pelicula of proximamente(); track pelicula.id) {
+        <app-pelicula-card [pelicula]="pelicula" [mostrarAlerta]="true" />
+      }
+    </div>
+  </section>
+}
+
+@if (misPeliculas().length > 0) {
+  <section class="bloque">
+    <h2>Mis películas</h2>
+    <p class="texto-suave">Títulos que ya tenés en tu historial de entradas.</p>
+    <div class="chips-peliculas">
+      @for (pelicula of misPeliculas(); track pelicula.id) {
+        <a class="chip chip--pelicula" [routerLink]="['/compra', pelicula.id]">
+          <img [src]="pelicula.imagenUrl" [alt]="pelicula.nombre" />
+          {{ pelicula.nombre }} · {{ resenyasDe(pelicula.id) }}
+        </a>
+      }
+    </div>
+  </section>
+}
+
+@if (combos().length > 0) {
+  <section class="bloque">
+    <h2>Combos especiales</h2>
+    <p class="texto-suave">Entrada + pochoclos + bebida a un precio fijo, configurado por el cine.</p>
+    <div class="grilla-combos">
+      @for (combo of combos(); track combo.id) {
+        <article class="combo">
+          <h3>{{ combo.nombre }}</h3>
+          <p>{{ combo.descripcion }}</p>
+          <p class="combo__detalle">
+            {{ combo.entradas }} entrada(s) · {{ combo.productos.length }} producto(s)
+          </p>
+          <strong>{{ formatear(combo.precio) }}</strong>
+        </article>
+      }
+    </div>
+  </section>
+}
+
+@if (candy().length > 0) {
+  <section class="bloque">
+    <h2>Candy bar</h2>
+    <ul class="grilla-productos">
+      @for (producto of candy(); track producto.id) {
+        <li>
+          <img [src]="producto.imagenUrl" [alt]="producto.nombre" />
+          <strong>{{ producto.nombre }}</strong>
+          <span>{{ formatear(producto.precio) }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}

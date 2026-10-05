@@ -1,356 +1,614 @@
-<div style="padding: 20px; max-width: 1000px; margin: 0 auto; font-family: sans-serif;">
-  <h2>Panel de Administración</h2>
+<section class="panel">
+  <div>
+    <h1 class="titulo-seccion">Panel de administración</h1>
+    <p class="texto-suave">Sesión de {{ auth.nombreUsuario() }} ({{ auth.sesionActual()?.rol }})</p>
+  </div>
+</section>
 
-  <!-- SECCIÓN: ESTADÍSTICAS Y GRÁFICOS (Películas más vistas y Candy) -->
-  <section style="background: #eef2f7; padding: 15px; border: 1px solid #d0d7de; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Estadísticas y Métricas del Cine</h3>
-    
-    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-      <!-- Películas más vistas por semana -->
-      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
-        <h4 style="margin-top: 0; color: #0366d6;">📊 Más Vistas (Semana)</h4>
-        <ul style="padding-left: 20px; margin-bottom: 0;">
-          <li *ngFor="let item of peliculasMasVistasSemana">
-            {{ item.pelicula }}: <strong>{{ item.cantidad }} entradas</strong>
-          </li>
-        </ul>
-      </div>
+@if (error()) {
+  <p class="alerta alerta--error">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p class="alerta alerta--ok">{{ mensaje() }}</p>
+}
 
-      <!-- Películas más vistas por mes -->
-      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
-        <h4 style="margin-top: 0; color: #28a745;">📈 Más Vistas (Mes)</h4>
-        <ul style="padding-left: 20px; margin-bottom: 0;">
-          <li *ngFor="let item of peliculasMasVistasMes">
-            {{ item.pelicula }}: <strong>{{ item.cantidad }} entradas</strong>
-          </li>
-        </ul>
-      </div>
+<nav class="pestanas">
+  @for (item of secciones; track item.id) {
+    <button
+      type="button"
+      [class.pestanas__activa]="seccion() === item.id"
+      (click)="seccion.set(item.id)"
+    >
+      {{ item.etiqueta }}
+    </button>
+  }
+</nav>
 
-      <!-- Producto Candy Más Vendido -->
-      <div style="flex: 1; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">
-        <h4 style="margin-top: 0; color: #d73a49;">🍿 Candy Más Vendido</h4>
-        <div style="text-align: center; margin-top: 15px;" *ngIf="productoCandyMasVendido">
-          <span style="font-size: 16px; font-weight: bold; color: #24292e;">{{ productoCandyMasVendido.nombre }}</span><br>
-          <span style="font-size: 14px; color: #586069;">Unidades vendidas: <strong>{{ productoCandyMasVendido.cantidad }}</strong></span>
-        </div>
-      </div>
+@if (seccion() === 'peliculas') {
+  <section class="bloque">
+    <h2>Alta de película</h2>
+    <div class="formulario formulario--rejilla">
+      <label class="campo">
+        <span>Nombre</span>
+        <input type="text" [ngModel]="nuevaPelicula().nombre" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), nombre: $event })" />
+      </label>
+      <label class="campo">
+        <span>Duración (min)</span>
+        <input type="number" [ngModel]="nuevaPelicula().duracionMinutos" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), duracionMinutos: $event })" />
+      </label>
+      <label class="campo">
+        <span>Géneros (separados por coma)</span>
+        <input type="text" [ngModel]="nuevaPelicula().generos" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), generos: $event })" />
+      </label>
+      <label class="campo">
+        <span>Formato</span>
+        <select [ngModel]="nuevaPelicula().formato" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), formato: aFormato($event) })">
+          <option value="2D">2D</option><option value="3D">3D</option><option value="4D">4D</option><option value="5D">5D</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Idioma</span>
+        <select [ngModel]="nuevaPelicula().idioma" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), idioma: aIdioma($event) })">
+          <option value="Castellano">Castellano</option><option value="Subtitulada">Subtitulada</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Clasificación</span>
+        <select [ngModel]="nuevaPelicula().clasificacionEdad" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), clasificacionEdad: aClasificacion($event) })">
+          <option [ngValue]="0">Sin restricción</option><option [ngValue]="13">+13</option><option [ngValue]="18">+18</option>
+        </select>
+      </label>
+      <label class="campo campo--ancho">
+        <span>Poster (URL)</span>
+        <input type="url" [ngModel]="nuevaPelicula().imagenUrl" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), imagenUrl: $event })" />
+      </label>
+      <label class="campo campo--ancho">
+        <span>Sinopsis</span>
+        <textarea rows="2" [ngModel]="nuevaPelicula().sinopsis" (ngModelChange)="nuevaPelicula.set({ ...nuevaPelicula(), sinopsis: $event })"></textarea>
+      </label>
     </div>
+    <button type="button" class="boton boton--primario" (click)="crearPelicula()">Crear película</button>
   </section>
 
-  <!-- SECCIÓN: CUPONES DE DESCUENTO -->
-  <section style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Configuración de Cupones de Descuento</h3>
-    
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
-      <input type="text" placeholder="Código (ej: SENIOR30)" [(ngModel)]="nuevoCodigo" style="padding: 8px;" />
-      <input type="number" placeholder="% Descuento" [(ngModel)]="nuevoPorcentaje" min="1" max="100" style="padding: 8px; width: 100px;" />
-      <label style="display: flex; align-items: center; gap: 5px;">
-        <input type="checkbox" [(ngModel)]="soloMayores50" /> Solo para mayores de 50 años
+  <section class="bloque">
+    <h2>Cartelera y preventa</h2>
+    <table class="tabla">
+      <thead>
+        <tr><th>Título</th><th>Clasificación</th><th>Ventas</th><th>Estado</th><th>Preventa</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        @for (pelicula of peliculas(); track pelicula.id) {
+          <tr>
+            <td>
+              <strong>{{ pelicula.nombre }}</strong>
+              <small>{{ pelicula.formato }} · {{ pelicula.duracionMinutos }} min</small>
+            </td>
+            <td>{{ pelicula.clasificacionEdad === 0 ? 'Libre' : '+' + pelicula.clasificacionEdad }}</td>
+            <td>{{ pelicula.ventasTotales }}</td>
+            <td>{{ pelicula.visibleEnCartelera ? 'En cartelera' : 'Fuera' }}</td>
+            <td>{{ estadoPreventa(pelicula.id) }}</td>
+            <td class="acciones">
+              <button type="button" class="boton boton--fantasma" (click)="editarPelicula(pelicula.id)">Editar</button>
+              <button type="button" class="boton boton--fantasma" (click)="abrirPreventa(pelicula.id)">Preventa</button>
+              <button type="button" class="boton boton--peligro" (click)="eliminarPelicula(pelicula.id)">Borrar</button>
+            </td>
+          </tr>
+
+          @if (peliculaEditando() === pelicula.id) {
+            <tr class="tabla__editor">
+              <td colspan="6">
+                <div class="formulario formulario--rejilla">
+                  <label class="campo">
+                    <span>Nombre</span>
+                    <input type="text" [ngModel]="edicionPelicula().nombre" (ngModelChange)="edicionPelicula.set({ ...edicionPelicula(), nombre: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Duración (min)</span>
+                    <input type="number" [ngModel]="edicionPelicula().duracionMinutos" (ngModelChange)="edicionPelicula.set({ ...edicionPelicula(), duracionMinutos: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Géneros</span>
+                    <input type="text" [ngModel]="edicionPelicula().generos" (ngModelChange)="edicionPelicula.set({ ...edicionPelicula(), generos: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Clasificación</span>
+                    <select [ngModel]="edicionPelicula().clasificacionEdad" (ngModelChange)="edicionPelicula.set({ ...edicionPelicula(), clasificacionEdad: aClasificacion($event) })">
+                      <option [ngValue]="0">Sin restricción</option><option [ngValue]="13">+13</option><option [ngValue]="18">+18</option>
+                    </select>
+                  </label>
+                  <label class="campo campo--ancho">
+                    <span>Sinopsis</span>
+                    <textarea rows="2" [ngModel]="edicionPelicula().sinopsis" (ngModelChange)="edicionPelicula.set({ ...edicionPelicula(), sinopsis: $event })"></textarea>
+                  </label>
+                </div>
+                <div class="acciones">
+                  <button type="button" class="boton boton--primario" (click)="guardarPelicula()">Guardar</button>
+                  <button type="button" class="boton boton--fantasma" (click)="cancelarEdicionPelicula()">Cancelar</button>
+                </div>
+              </td>
+            </tr>
+          }
+
+          @if (preventaPelicula() === pelicula.id) {
+            <tr class="tabla__editor">
+              <td colspan="6">
+                <h3>Preventa de {{ pelicula.nombre }}</h3>
+                <div class="formulario formulario--rejilla">
+                  <label class="campo">
+                    <span>Precio especial</span>
+                    <input type="number" [ngModel]="preventaForm().precio" (ngModelChange)="preventaForm.set({ ...preventaForm(), precio: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Días de anticipación</span>
+                    <input type="number" [ngModel]="preventaForm().diasAnticipacion" (ngModelChange)="preventaForm.set({ ...preventaForm(), diasAnticipacion: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Fecha de estreno</span>
+                    <input type="date" [ngModel]="preventaForm().fechaEstreno" (ngModelChange)="preventaForm.set({ ...preventaForm(), fechaEstreno: $event })" />
+                  </label>
+                  <label class="campo">
+                    <span>Activa</span>
+                    <input type="checkbox" [ngModel]="preventaForm().activa" (ngModelChange)="preventaForm.set({ ...preventaForm(), activa: $event })" />
+                  </label>
+                </div>
+                <div class="acciones">
+                  <button type="button" class="boton boton--primario" (click)="guardarPreventa()">Guardar preventa</button>
+                  <button type="button" class="boton boton--fantasma" (click)="preventaPelicula.set(null)">Cancelar</button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'funciones') {
+  <section class="bloque">
+    <h2>Alta de función</h2>
+    <p class="texto-suave">
+      Cada función reserva 30 minutos de sanitización al terminar. Si la sala elegida ya está ocupada en
+      esos días y horario, el sistema avisa y no la crea.
+    </p>
+    <div class="formulario formulario--rejilla">
+      <label class="campo">
+        <span>Película</span>
+        <select [ngModel]="nuevaFuncion().peliculaId" (ngModelChange)="nuevaFuncion.set({ ...nuevaFuncion(), peliculaId: +$event })">
+          <option [ngValue]="0">Seleccionar</option>
+          @for (pelicula of peliculas(); track pelicula.id) {
+            <option [ngValue]="pelicula.id">{{ pelicula.nombre }}</option>
+          }
+        </select>
       </label>
-      <button (click)="guardarCupon()" style="padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer;">Crear Cupón</button>
+      <label class="campo">
+        <span>Sala</span>
+        <select [ngModel]="nuevaFuncion().salaId" (ngModelChange)="nuevaFuncion.set({ ...nuevaFuncion(), salaId: +$event })">
+          @for (sala of salas(); track sala.id) {
+            <option [ngValue]="sala.id">{{ sala.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        <span>Hora de inicio</span>
+        <input type="time" [ngModel]="nuevaFuncion().horaInicio" (ngModelChange)="nuevaFuncion.set({ ...nuevaFuncion(), horaInicio: $event })" />
+      </label>
+      <label class="campo">
+        <span>Precio base</span>
+        <input type="number" [ngModel]="nuevaFuncion().precio" (ngModelChange)="nuevaFuncion.set({ ...nuevaFuncion(), precio: $event })" />
+      </label>
     </div>
 
-    <h4>Cupones Existentes</h4>
-    <ul style="list-style: none; padding: 0;">
-      <li *ngFor="let cupon of cineService.getCupones()" style="display: flex; gap: 15px; align-items: center; margin-bottom: 8px;">
-        <strong>{{ cupon.codigo }}</strong> - 
-        <span>Restricción: {{ cupon.soloMayores50 ? 'Mayores de 50 años' : 'Público general' }}</span>
-        <label>
-          Descuento %: 
-          <input type="number" [value]="cupon.porcentajeDescuento" (change)="modificarDescuento(cupon.id, $event)" style="width: 60px; padding: 4px;" />
+    <div class="dias">
+      @for (dia of diasSemana; track dia) {
+        <button
+          type="button"
+          class="chip chip--dia"
+          [class.chip--activo]="nuevaFuncion().dias.includes(dia)"
+          (click)="alternarDia(dia)"
+        >
+          {{ dia }}
+        </button>
+      }
+    </div>
+
+    <button type="button" class="boton boton--primario" (click)="crearFuncion()">Crear función</button>
+  </section>
+
+  <section class="bloque">
+    <h2>Funciones cargadas ({{ funciones().length }})</h2>
+    <table class="tabla">
+      <thead>
+        <tr><th>Película</th><th>Sala</th><th>Días</th><th>Horario</th><th>Precio</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (funcion of funciones(); track funcion.id) {
+          <tr>
+            <td>{{ cine.obtenerPelicula(funcion.peliculaId)?.nombre ?? '—' }}</td>
+            <td>{{ cine.obtenerSala(funcion.salaId)?.nombre ?? funcion.salaId }}</td>
+            <td>{{ funcion.dias.join(', ') }}</td>
+            <td>{{ funcion.horaInicio }} – {{ funcion.horaFin }}</td>
+            <td>
+              <input
+                class="tabla__input"
+                type="number"
+                [value]="funcion.precio"
+                (change)="actualizarPrecioFuncion(funcion.id, +$any($event.target).value)"
+              />
+            </td>
+            <td><button type="button" class="boton boton--peligro" (click)="eliminarFuncion(funcion.id)">Borrar</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'salas') {
+  <section class="bloque">
+    <h2>Salas ({{ salas().length }})</h2>
+    <button type="button" class="boton boton--primario" (click)="crearSala()">Agregar sala</button>
+
+    <table class="tabla">
+      <thead>
+        <tr><th>Sala</th><th>Filas</th><th>Butacas</th><th>Activa</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        @for (sala of salas(); track sala.id) {
+          <tr>
+            <td>{{ sala.nombre }}</td>
+            <td>{{ sala.filas.length }}</td>
+            <td>{{ totalButacas(sala.id) }}</td>
+            <td>{{ sala.activa ? 'Sí' : 'No' }}</td>
+            <td class="acciones">
+              <button type="button" class="boton boton--fantasma" (click)="editarSala(sala.id)">Editar distribución</button>
+              <button type="button" class="boton boton--peligro" (click)="eliminarSala(sala.id)">Borrar</button>
+            </td>
+          </tr>
+
+          @if (salaEditando() === sala.id) {
+            <tr class="tabla__editor">
+              <td colspan="5">
+                <label class="campo">
+                  <span>Nombre</span>
+                  <input type="text" [ngModel]="nombreSala()" (ngModelChange)="nombreSala.set($event)" />
+                </label>
+                <table class="tabla tabla--compacta">
+                  <thead>
+                    <tr><th>Fila</th><th>Tipo</th><th>Izquierda</th><th>Centro</th><th>Derecha</th><th>Total</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of filasEditadas(); track fila.letra; let i = $index) {
+                      <tr>
+                        <td>{{ fila.letra }}</td>
+                        <td>
+                          <button type="button" class="boton boton--fantasma" (click)="alternarTipoFila(i)">
+                            {{ fila.tipo }}
+                          </button>
+                        </td>
+                        @for (bloque of [0, 1, 2]; track bloque) {
+                          <td>
+                            <button type="button" (click)="ajustarBloque(i, bloque, -1)">−</button>
+                            <span>{{ fila.bloques[bloque] }}</span>
+                            <button type="button" (click)="ajustarBloque(i, bloque, 1)">+</button>
+                          </td>
+                        }
+                        <td>{{ fila.bloques[0] + fila.bloques[1] + fila.bloques[2] }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                <div class="acciones">
+                  <button type="button" class="boton boton--primario" (click)="guardarSala()">Guardar sala</button>
+                  <button type="button" class="boton boton--fantasma" (click)="salaEditando.set(null)">Cancelar</button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'productos') {
+  <section class="bloque">
+    <h2>Alta de producto</h2>
+    <div class="formulario formulario--rejilla">
+      <label class="campo">
+        <span>Nombre</span>
+        <input type="text" [ngModel]="nuevoProducto().nombre" (ngModelChange)="nuevoProducto.set({ ...nuevoProducto(), nombre: $event })" />
+      </label>
+      <label class="campo">
+        <span>Precio</span>
+        <input type="number" [ngModel]="nuevoProducto().precio" (ngModelChange)="nuevoProducto.set({ ...nuevoProducto(), precio: $event })" />
+      </label>
+      <label class="campo">
+        <span>Categoría</span>
+        <select [ngModel]="nuevoProducto().categoria" (ngModelChange)="nuevoProducto.set({ ...nuevoProducto(), categoria: aCategoria($event) })">
+          @for (categoria of categorias; track categoria) {
+            <option [value]="categoria">{{ categoria }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        <span>Imagen (URL)</span>
+        <input type="url" [ngModel]="nuevoProducto().imagenUrl" (ngModelChange)="nuevoProducto.set({ ...nuevoProducto(), imagenUrl: $event })" />
+      </label>
+    </div>
+    <button type="button" class="boton boton--primario" (click)="crearProducto()">Crear producto</button>
+  </section>
+
+  <section class="bloque">
+    <h2>Productos</h2>
+    <table class="tabla">
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Activo</th><th></th></tr></thead>
+      <tbody>
+        @for (producto of productos(); track producto.id) {
+          <tr>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.categoria }}</td>
+            <td>{{ formatear(producto.precio) }}</td>
+            <td>{{ producto.activo ? 'Sí' : 'No' }}</td>
+            <td class="acciones">
+              <button type="button" class="boton boton--fantasma" (click)="alternarProducto(producto.id)">
+                {{ producto.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button type="button" class="boton boton--peligro" (click)="eliminarProducto(producto.id)">Borrar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'cupones') {
+  <section class="bloque">
+    <h2>Cupón de primera compra</h2>
+    <p class="texto-suave">
+      El porcentaje por defecto se puede cambiar acá (mail del 01/01: 20% en la primera compra).
+    </p>
+    @if (cuponBienvenida; as bienvenida) {
+      <div class="formulario formulario--rejilla">
+        <label class="campo">
+          <span>Descuento (%) — código {{ bienvenida.codigo }}</span>
+          <input
+            type="number"
+            [value]="bienvenida.porcentajeDescuento"
+            (change)="cambiarPorcentajeCuponesBienvenida(+$any($event.target).value)"
+          />
         </label>
-      </li>
+        <span class="texto-suave">Usos: {{ bienvenida.usos }}@if (bienvenida.usosMaximos > 0) { / {{ bienvenida.usosMaximos }} }</span>
+      </div>
+    }
+  </section>
+
+  <section class="bloque">
+    <h2>Alta de cupón</h2>
+    <div class="formulario formulario--rejilla">
+      <label class="campo">
+        <span>Código</span>
+        <input type="text" [ngModel]="nuevoCupon().codigo" (ngModelChange)="nuevoCupon.set({ ...nuevoCupon(), codigo: $event })" />
+      </label>
+      <label class="campo">
+        <span>Descuento (%)</span>
+        <input type="number" [ngModel]="nuevoCupon().porcentajeDescuento" (ngModelChange)="nuevoCupon.set({ ...nuevoCupon(), porcentajeDescuento: $event })" />
+      </label>
+      <label class="campo">
+        <span>Usos máximos (0 = ilimitado)</span>
+        <input type="number" [ngModel]="nuevoCupon().usosMaximos" (ngModelChange)="nuevoCupon.set({ ...nuevoCupon(), usosMaximos: $event })" />
+      </label>
+      <label class="campo">
+        <span>Solo mayores de 50</span>
+        <input type="checkbox" [ngModel]="nuevoCupon().soloMayores50" (ngModelChange)="nuevoCupon.set({ ...nuevoCupon(), soloMayores50: $event })" />
+      </label>
+      <label class="campo campo--ancho">
+        <span>Descripción</span>
+        <input type="text" [ngModel]="nuevoCupon().descripcion" (ngModelChange)="nuevoCupon.set({ ...nuevoCupon(), descripcion: $event })" />
+      </label>
+    </div>
+    <button type="button" class="boton boton--primario" (click)="crearCupon()">Crear cupón</button>
+  </section>
+
+  <section class="bloque">
+    <h2>Cupones cargados</h2>
+    <table class="tabla">
+      <thead><tr><th>Código</th><th>Descuento</th><th>Condición</th><th>Usos</th><th></th></tr></thead>
+      <tbody>
+        @for (cupon of cupones(); track cupon.id) {
+          <tr>
+            <td><code>{{ cupon.codigo }}</code></td>
+            <td>{{ cupon.porcentajeDescuento }}%</td>
+            <td>
+              @if (cupon.soloPrimeraCompra) { Primera compra }
+              @if (cupon.soloMayores50) { +50 años }
+              @if (!cupon.soloPrimeraCompra && !cupon.soloMayores50) { Sin condición }
+            </td>
+            <td>{{ cupon.usos }}@if (cupon.usosMaximos > 0) { / {{ cupon.usosMaximos }} }</td>
+            <td><button type="button" class="boton boton--peligro" (click)="eliminarCupon(cupon.id)">Borrar</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'combos') {
+  <section class="bloque">
+    <h2>Alta de combo especial</h2>
+    <div class="formulario formulario--rejilla">
+      <label class="campo">
+        <span>Nombre</span>
+        <input type="text" [ngModel]="nuevoCombo().nombre" (ngModelChange)="nuevoCombo.set({ ...nuevoCombo(), nombre: $event })" />
+      </label>
+      <label class="campo">
+        <span>Precio</span>
+        <input type="number" [ngModel]="nuevoCombo().precio" (ngModelChange)="nuevoCombo.set({ ...nuevoCombo(), precio: $event })" />
+      </label>
+      <label class="campo">
+        <span>Entradas incluidas</span>
+        <input type="number" [ngModel]="nuevoCombo().entradas" (ngModelChange)="nuevoCombo.set({ ...nuevoCombo(), entradas: $event })" />
+      </label>
+      <label class="campo campo--ancho">
+        <span>Descripción</span>
+        <input type="text" [ngModel]="nuevoCombo().descripcion" (ngModelChange)="nuevoCombo.set({ ...nuevoCombo(), descripcion: $event })" />
+      </label>
+    </div>
+
+    <h3>Productos incluidos</h3>
+    <div class="dias">
+      @for (producto of productos(); track producto.id) {
+        <button
+          type="button"
+          class="chip chip--dia"
+          [class.chip--activo]="nuevoCombo().productoIds.includes(producto.id)"
+          (click)="alternarProductoEnCombo(producto.id)"
+        >
+          {{ producto.nombre }}
+        </button>
+      }
+    </div>
+
+    <button type="button" class="boton boton--primario" (click)="crearCombo()">Crear combo</button>
+  </section>
+
+  <section class="bloque">
+    <h2>Combos</h2>
+    <table class="tabla">
+      <thead><tr><th>Nombre</th><th>Entradas</th><th>Precio</th><th></th></tr></thead>
+      <tbody>
+        @for (combo of combos(); track combo.id) {
+          <tr>
+            <td>{{ combo.nombre }}<small>{{ combo.descripcion }}</small></td>
+            <td>{{ combo.entradas }}</td>
+            <td>{{ formatear(combo.precio) }}</td>
+            <td><button type="button" class="boton boton--peligro" (click)="eliminarCombo(combo.id)">Borrar</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+
+@if (seccion() === 'reportes') {
+  <section class="bloque">
+    <h2>Facturación</h2>
+    <div class="panel__cifras">
+      <div><span>Total facturado</span><strong>{{ formatear(totalFacturado()) }}</strong></div>
+      <div><span>Entradas vendidas</span><strong>{{ totalEntradas() }}</strong></div>
+    </div>
+<div class="acciones" [class.acciones--ocupado]="exportando()">
+      <button type="button" class="boton boton--primario" [disabled]="exportando()" (click)="exportarFacturacionPDF()">Facturación diaria (PDF)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarFacturacionExcel()">Facturación diaria (Excel)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarMensualPDF()">Mensual (PDF)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarMensualExcel()">Mensual (Excel)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarOcupacionPDF()">Ocupación (PDF)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarOcupacionExcel()">Ocupación (Excel)</button>
+      <button type="button" class="boton boton--fantasma" [disabled]="exportando()" (click)="exportarFacturacion()">Todo (CSV)</button>
+    </div>
+
+    <h3>Por día</h3>
+    @if (reporteDiario().length === 0) {
+      <p class="texto-suave">Todavía no hay ventas registradas.</p>
+    } @else {
+      <ul class="barras">
+        @for (fila of reporteDiario(); track fila.fecha) {
+          <li>
+            <span class="barras__etiqueta">{{ fila.fecha }}</span>
+            <span class="barras__pista">
+              <span class="barras__valor" [style.width.%]="(fila.totalFacturado / maximoFacturado()) * 100"></span>
+            </span>
+            <span class="barras__dato">{{ formatear(fila.totalFacturado) }} · {{ fila.entradasVendidas }} entradas</span>
+          </li>
+        }
+      </ul>
+    }
+
+    <h3>Por mes</h3>
+    <ul class="barras">
+      @for (fila of reporteMensual(); track fila.fecha) {
+        <li>
+          <span class="barras__etiqueta">{{ fila.fecha }}</span>
+          <span class="barras__pista">
+            <span class="barras__valor" [style.width.%]="(fila.totalFacturado / maximoMensual()) * 100"></span>
+          </span>
+          <span class="barras__dato">{{ formatear(fila.totalFacturado) }}</span>
+        </li>
+      }
     </ul>
   </section>
 
-  <!-- SECCIÓN: REPORTE DE FACTURACIÓN Y EXPORTACIÓN (PDF / Excel) -->
-  <section style="background: #e2f0d9; padding: 15px; border: 1px solid #c8e1b9; border-radius: 8px; margin-bottom: 25px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <h3 style="margin: 0;">Reporte de Facturación y Entradas Vendidas por Día</h3>
-      <div style="display: flex; gap: 10px;">
-        <button (click)="exportarPDF()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar PDF</button>
-        <button (click)="exportarExcel()" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exportar Excel</button>
-      </div>
-    </div>
-
-    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left; background: white;">
-      <thead>
-        <tr style="background: #d4edda;">
-          <th>Fecha</th>
-          <th>Entradas Vendidas</th>
-          <th>Total Facturado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let reporte of reporteFacturacionDiaria">
-          <td>{{ reporte.fecha }}</td>
-          <td><strong>{{ reporte.entradasVendidas }}</strong></td>
-          <td><strong>${{ reporte.totalFacturado }}</strong></td>
-        </tr>
-        <tr *ngIf="reporteFacturacionDiaria.length === 0">
-          <td colspan="3" style="text-align: center; color: #666; padding: 10px;">No hay registros de ventas todavía.</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
-  <!-- SECCIÓN: CONFIGURACIÓN DE PREVENTA (NUEVO REQUERIMIENTO 08/03) -->
-  <section style="background: #fff0f3; padding: 15px; border: 1px solid #ffccd5; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Sistema de Preventa (Precio Especial 7 días antes)</h3>
-    <p style="font-size: 0.9em; color: #666;">Configure la preventa de entradas de forma individual por cada película.</p>
-
-    <div style="margin-bottom: 10px;">
-      <label>Seleccionar Película: </label>
-      <select [(ngModel)]="peliculaPreventaId" style="padding: 8px; width: 100%;">
-        <option [ngValue]="null">-- Seleccionar Película --</option>
-        <option *ngFor="let p of cineService.getPeliculas()" [value]="p.id">{{ p.nombre }}</option>
-      </select>
-    </div>
-
-    <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
-      <div style="flex: 1;">
-        <label>Precio Especial de Preventa ($): </label>
-        <input type="number" [(ngModel)]="precioEspecialPreventa" style="padding: 8px; width: 100%;" />
-      </div>
-      <div style="flex: 1;">
-        <label>Fecha de Inicio de Preventa: </label>
-        <input type="date" [(ngModel)]="fechaInicioPreventaStr" style="padding: 8px; width: 100%;" />
-      </div>
-    </div>
-
-    <button (click)="configurarPreventa()" style="padding: 10px 20px; background: #e83e8c; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">
-      Guardar Configuración de Preventa
-    </button>
-  </section>
-
-  <!-- SECCIÓN: PROGRAMACIÓN DE FUNCIONES -->
-  <section style="background: #eef6ff; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Programar Función (Asignación Automática de Sala)</h3>
-    
-    <div style="margin-bottom: 10px;">
-      <label>Película: </label>
-      <select [(ngModel)]="peliculaSeleccionadaId" style="padding: 8px; width: 100%;">
-        <option [ngValue]="null">-- Seleccionar Película --</option>
-        <option *ngFor="let p of cineService.getPeliculas()" [value]="p.id">{{ p.nombre }} ({{ p.duracionMinutos }} min)</option>
-      </select>
-    </div>
-
-    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
-      <div style="flex: 1;">
-        <label>Formato: </label>
-        <select [(ngModel)]="formatoSeleccionado" style="padding: 8px; width: 100%;">
-          <option value="2D">2D</option>
-          <option value="3D">3D</option>
-          <option value="4D">4D</option>
-          <option value="5D">5D</option>
-        </select>
-      </div>
-      <div style="flex: 1;">
-        <label>Idioma: </label>
-        <select [(ngModel)]="idiomaSeleccionado" style="padding: 8px; width: 100%;">
-          <option value="Castellano">Castellano</option>
-          <option value="Subtitulada">Subtitulada</option>
-        </select>
-      </div>
-    </div>
-
-    <div style="margin-bottom: 10px;">
-      <label>Días de Proyección: </label>
-      <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap;">
-        <button *ngFor="let dia of diasSemana" 
-                type="button" 
-                (click)="toggleDia(dia)"
-                [style.background]="diasSeleccionados.includes(dia) ? '#28a745' : '#ccc'"
-                style="color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-          {{ dia }}
-        </button>
-      </div>
-    </div>
-
-    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end; flex-wrap: wrap;">
-      <div style="flex: 1; min-width: 250px;">
-        <label>Horario de Inicio: </label>
-        <div style="display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap;">
-          <button *ngFor="let h of ['14:00', '16:30', '19:00', '21:30', '23:45']" 
-                  type="button" 
-                  (click)="horaInicio = h"
-                  [style.background]="horaInicio === h ? '#007bff' : '#e9ecef'"
-                  [style.color]="horaInicio === h ? 'white' : '#333'"
-                  style="border: 1px solid #ced4da; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
-            {{ h }} hs
-          </button>
-        </div>
+  <section class="bloque">
+    <h2>Top películas</h2>
+    <div class="rejilla-reportes">
+      <div>
+        <h3>Últimos 7 días</h3>
+        @if (topSemana().length === 0) {
+          <p class="texto-suave">Sin datos.</p>
+        } @else {
+          <ul class="barras">
+            @for (item of topSemana(); track item.etiqueta) {
+              <li>
+                <span class="barras__etiqueta">{{ item.etiqueta }}</span>
+                <span class="barras__pista"><span class="barras__valor" [style.width.%]="(item.cantidad / topSemana()[0].cantidad) * 100"></span></span>
+                <span class="barras__dato">{{ item.cantidad }}</span>
+              </li>
+            }
+          </ul>
+        }
       </div>
       <div>
-        <label>Precio Entrada ($): </label>
-        <input type="number" [(ngModel)]="precioFuncion" style="padding: 6px; width: 120px;" />
+        <h3>Últimos 30 días</h3>
+        @if (topMes().length === 0) {
+          <p class="texto-suave">Sin datos.</p>
+        } @else {
+          <ul class="barras">
+            @for (item of topMes(); track item.etiqueta) {
+              <li>
+                <span class="barras__etiqueta">{{ item.etiqueta }}</span>
+                <span class="barras__pista"><span class="barras__valor" [style.width.%]="(item.cantidad / topMes()[0].cantidad) * 100"></span></span>
+                <span class="barras__dato">{{ item.cantidad }}</span>
+              </li>
+            }
+          </ul>
+        }
       </div>
     </div>
 
-    <button (click)="programarFuncion()" style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer;">
-      Asignar Función Automáticamente
-    </button>
-
-    <p *ngIf="mensajeAsignacion" [style.color]="esExito ? 'green' : 'red'" style="margin-top: 10px; font-weight: bold;">
-      {{ mensajeAsignacion }}
-    </p>
-  </section>
-
-  <!-- SECCIÓN: TABLA DE FUNCIONES ASIGNADAS -->
-  <section style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Funciones Asignadas</h3>
-    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
-      <thead>
-        <tr style="background: #eee;">
-          <th>Película ID</th>
-          <th>Formato / Idioma</th>
-          <th>Sala</th>
-          <th>Días</th>
-          <th>Horario (Inicio - Fin + 30m)</th>
-          <th>Precio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let f of cineService.getFunciones()">
-          <td>{{ f.peliculaId }}</td>
-          <td><strong>{{ f.formato }}</strong> - {{ f.idioma }}</td>
-          <td><strong>Sala {{ f.salaId }}</strong></td>
-          <td>{{ f.dias.join(', ') }}</td>
-          <td>{{ f.horaInicio }} hs a {{ f.horaFin }} hs</td>
-          <td>${{ f.precio }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
-  <!-- SECCIÓN: GESTIÓN DE CANDY BAR -->
-  <section style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Gestión de Candy Bar</h3>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-      <input 
-        type="text" 
-        placeholder="Nombre del Producto" 
-        [(ngModel)]="nuevoProductoNombre"
-        style="padding: 8px; flex: 1;"
-      >
-      
-      <select [(ngModel)]="nuevoProductoCategoria" style="padding: 8px;">
-        <option value="Pochoclos">Pochoclos</option>
-        <option value="Bebidas">Bebidas</option>
-        <option value="Golosinas">Golosinas</option>
-        <option value="Combos">Combos</option>
-      </select>
-      
-      <input 
-        type="number" 
-        placeholder="Precio ($)" 
-        [(ngModel)]="nuevoProductoPrecio"
-        style="padding: 8px; width: 100px;"
-      >
-      
-      <button (click)="crearProductoCandy()" style="padding: 8px 15px; background-color: #007bff; color: white; border: none; cursor: pointer;">
-        Agregar Producto
-      </button>
-    </div>
-
-    <h4>Productos Actuales</h4>
-    <table border="1" style="width: 100%; text-align: left; border-collapse: collapse;">
-      <thead>
-        <tr style="background-color: #eee;">
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Categoría</th>
-          <th>Precio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let prod of cineService.getProductosCandy()">
-          <td>{{ prod.id }}</td>
-          <td>{{ prod.nombre }}</td>
-          <td>{{ prod.categoria }}</td>
-          <td>${{ prod.precio }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
-  <!-- SECCIÓN: FIDELIZACIÓN Y COMBOS -->
-  <section style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 25px;">
-    <h3>Programa de Fidelización y Combos Especiales</h3>
-
-    <div style="margin-bottom: 20px;">
-      <h4>Configurar Costo de Recompensas (Puntos)</h4>
-      <p style="font-size: 0.9em; color: #666;">Los usuarios acumulan 1 punto por cada $1 gastado.</p>
-      <ul style="list-style: none; padding: 0;">
-        <li *ngFor="let rec of recompensas" style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-          <span><strong>{{ rec.nombre }}</strong> ({{ rec.tipo }}):</span>
-          <input 
-            type="number" 
-            [value]="rec.puntosRequeridos" 
-            (change)="modificarPuntosRecompensa(rec.id, $event)" 
-            style="width: 90px; padding: 4px;" 
-          />
-          <span>puntos</span>
+    <h3>Ocupación por sala</h3>
+    <ul class="barras">
+      @for (sala of ocupacion(); track sala.etiqueta) {
+        <li>
+          <span class="barras__etiqueta">{{ sala.etiqueta }}</span>
+          <span class="barras__pista"><span class="barras__valor" [style.width.%]="(sala.cantidad / maximoOcupacion()) * 100"></span></span>
+          <span class="barras__dato">{{ sala.cantidad }}%</span>
         </li>
-      </ul>
-    </div>
+      }
+    </ul>
 
-    <hr style="border: 0; border-top: 1px solid #e2d3a7; margin: 15px 0;">
-
-    <div>
-      <h4>Crear Combo Especial</h4>
-      <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-        <input type="text" placeholder="Nombre (ej: Combo Pareja)" [(ngModel)]="nuevoComboNombre" style="padding: 8px; flex: 1;" />
-        <input type="text" placeholder="Descripción (ej: 2 Entradas + Pochoclo)" [(ngModel)]="nuevoComboDescripcion" style="padding: 8px; flex: 2;" />
-        <input type="number" placeholder="Precio ($)" [(ngModel)]="nuevoComboPrecio" style="padding: 8px; width: 100px;" />
-        <button (click)="crearCombo()" style="padding: 8px 15px; background-color: #ffc107; color: #212529; border: none; font-weight: bold; cursor: pointer;">
-          Crear Combo
-        </button>
-      </div>
-
-      <h4>Combos Configurados</h4>
-      <table border="1" style="width: 100%; text-align: left; border-collapse: collapse; background: white;">
-        <thead>
-          <tr style="background-color: #ffe8a1;">
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>Precio</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let combo of combos">
-            <td><strong>{{ combo.nombre }}</strong></td>
-            <td>{{ combo.descripcion }}</td>
-            <td>${{ combo.precio }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    @if (candyMasVendido(); as candy) {
+      <p class="texto-suave">Producto de candy bar más vendido: <strong>{{ candy.etiqueta }}</strong> ({{ candy.cantidad }} unidades).</p>
+    }
   </section>
+}
 
-  <!-- SECCIÓN: LOG DE ACTIVIDAD DEL SISTEMA -->
-  <section style="background: #2d3748; color: white; padding: 15px; border-radius: 8px;">
-    <h3 style="margin-top: 0; color: #e2e8f0;">📋 Log de Actividad del Sistema</h3>
-    <p style="font-size: 13px; color: #a0aec0; margin-bottom: 15px;">Registro detallado de acciones administrativas y validaciones (creación de funciones, cambios de precios, validación de QRs).</p>
-
-    <div style="max-height: 220px; overflow-y: auto; background: #1a202c; padding: 10px; border-radius: 6px;">
-      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-        <thead>
-          <tr style="border-bottom: 1px solid #4a5568; color: #cbd5e0;">
-            <th style="padding: 6px;">Fecha y Hora</th>
-            <th style="padding: 6px;">Usuario</th>
-            <th style="padding: 6px;">Acción Realizada</th>
+@if (seccion() === 'logs') {
+  <section class="bloque">
+    <h2>Bitácora de auditoría ({{ logs().length }})</h2>
+    <button type="button" class="boton boton--peligro" (click)="limpiarLogs()">Vaciar bitácora</button>
+    <table class="tabla">
+      <thead><tr><th>Fecha</th><th>Acción</th><th>Usuario</th><th>Detalle</th></tr></thead>
+      <tbody>
+        @for (log of logs(); track log.id) {
+          <tr>
+            <td>{{ log.fechaHora }}</td>
+            <td><code>{{ log.accion }}</code></td>
+            <td>{{ log.usuario }}</td>
+            <td>{{ log.detalle }}</td>
           </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let log of logActividad" style="border-bottom: 1px solid #2d3748;">
-            <td style="padding: 6px; color: #a0aec0; white-space: nowrap;">{{ log.fechaHora }}</td>
-            <td style="padding: 6px; color: #63b3ed;">{{ log.usuario }}</td>
-            <td style="padding: 6px; color: #e2e8f0;">{{ log.accion }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        }
+      </tbody>
+    </table>
   </section>
-</div>
+}

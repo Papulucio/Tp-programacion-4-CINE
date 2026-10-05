@@ -1,48 +1,75 @@
-<div style="padding: 20px; max-width: 600px; margin: 0 auto; font-family: sans-serif;">
-  <h2>Terminal de Control de Empleados</h2>
-  
-  <div style="background: #f8f9fa; border: 2px solid #ccc; padding: 20px; border-radius: 8px;">
-    <h3>Validar Ticket / Código QR</h3>
+<section class="panel">
+  <div>
+    <h1 class="titulo-seccion">Validación de entradas y candy</h1>
+    <p class="texto-suave">
+      Operador: {{ auth.nombreUsuario() }} · {{ ticketsActivos() }} entradas sin validar.
+    </p>
+  </div>
+  <div class="acciones">
+    <a class="boton boton--fantasma" routerLink="/home">Cartelera</a>
+  </div>
+</section>
 
-    <div style="margin-bottom: 15px;">
-      <label style="margin-right: 15px;">
-        <input type="radio" name="tipo" value="entrada" [(ngModel)]="tipoValidacion" /> Entrada Cine
-      </label>
-      <label>
-        <input type="radio" name="tipo" value="candy" [(ngModel)]="tipoValidacion" /> Entrega Candy Bar
-      </label>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; margin-bottom: 5px;">Código QR / Manual (Ej: CINE-8823):</label>
-      <input type="text" 
-             [(ngModel)]="codigoIngresado" 
-             placeholder="Escanear o ingresar código..." 
-             style="width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box;" 
-             (keyup.enter)="procesarCodigo()" />
-    </div>
-
-    <button (click)="procesarCodigo()" style="width: 100%; padding: 12px; background: #0056b3; color: white; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
-      Validar Código
-    </button>
-
-    <div *ngIf="resultadoMensaje" 
-         [style.background]="esExito ? '#d4edda' : '#f8d7da'" 
-         [style.color]="esExito ? '#155724' : '#721c24'" 
-         style="margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; text-align: center;">
-      {{ resultadoMensaje }}
-    </div>
+<section class="bloque">
+  <div class="conmutador">
+    <button type="button" [class.activo]="tipo() === 'entrada'" (click)="cambiarTipo('entrada')">Validar entrada</button>
+    <button type="button" [class.activo]="tipo() === 'candy'" (click)="cambiarTipo('candy')">Entregar candy bar</button>
   </div>
 
-  <div style="margin-top: 30px;">
-    <h4>Tickets en Sistema para Pruebas:</h4>
-    <ul>
-      <li *ngFor="let t of cineService.getTickets()">
-        <strong>Código:</strong> {{ t.codigoQr }} | 
-        <strong>Película:</strong> {{ t.peliculaNombre }} | 
-        <span>Entrada Usada: <strong>{{ t.validadoEntrada ? 'SÍ' : 'NO' }}</strong></span> | 
-        <span>Candy Entregado: <strong>{{ t.validadoCandy ? 'SÍ' : 'NO' }}</strong></span>
-      </li>
+  <form class="formulario" (ngSubmit)="validar()">
+    <label class="campo">
+      <span>Código QR</span>
+      <input type="text" name="codigo" [ngModel]="codigo()" (ngModelChange)="codigo.set($event)" placeholder="CINE-XXXXXXXX" />
+    </label>
+    <button class="boton boton--primario" type="submit">Validar</button>
+  </form>
+
+  @if (errorCamara()) {
+    <p class="alerta alerta--error">{{ errorCamara() }}</p>
+  }
+
+  <div class="camara">
+    <video #video playsinline muted class="camara__video" [class.camara__video--oculta]="!camaraActiva()"></video>
+    @if (camaraActiva()) {
+      <button type="button" class="boton boton--peligro" (click)="apagarCamara()">Apagar cámara</button>
+    } @else {
+      <button type="button" class="boton boton--fantasma" (click)="encenderCamara()">Escanear con la cámara</button>
+    }
+  </div>
+
+  @if (resultado(); as res) {
+    <div class="resultado" [class.resultado--ok]="res.exito" [class.resultado--error]="!res.exito">
+      <h2>{{ res.exito ? 'Validación correcta' : 'No se pudo validar' }}</h2>
+      <p>{{ res.mensaje }}</p>
+
+      @if (res.ticket; as ticket) {
+        <dl class="ticket__datos">
+          <div><dt>Película</dt><dd>{{ ticket.peliculaNombre }}</dd></div>
+          <div><dt>Función</dt><dd>{{ ticket.frecuencia }}</dd></div>
+          <div><dt>Fecha</dt><dd>{{ fecha(ticket.fechaHoraFuncion) }}</dd></div>
+          <div><dt>Butacas</dt><dd>
+            @for (butaca of ticket.butacas; track butaca.etiqueta) {
+              <span class="chip">{{ butaca.etiqueta }}</span>
+            }
+          </dd></div>
+          <div><dt>Total</dt><dd>{{ formatear(ticket.montoTotal) }}</dd></div>
+          @if (ticket.requiereAcompanante) {
+            <div><dt>Aviso</dt><dd class="ticket__aviso">Debe ingresar acompañado por un adulto.</dd></div>
+          }
+        </dl>
+      }
+    </div>
+  }
+
+  @if (historial().length > 0) {
+    <h2>Historial de la sesión</h2>
+    <ul class="lista-detalle">
+      @for (item of historial(); track $index) {
+        <li [class.lista-detalle__error]="!item.exito">
+          <span>{{ item.fecha }}</span>
+          <strong>{{ item.mensaje }}</strong>
+        </li>
+      }
     </ul>
-  </div>
-</div>
+  }
+</section>

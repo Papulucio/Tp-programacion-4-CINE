@@ -1,141 +1,256 @@
-<div style="padding: 20px; max-width: 900px; margin: 0 auto; font-family: sans-serif;" *ngIf="pelicula">
-  <h2>Comprar Entradas: {{ pelicula.nombre }}</h2>
+@if (error()) {
+  <p class="alerta alerta--error">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p class="alerta alerta--ok">{{ mensaje() }}</p>
+}
 
-  <!-- SECCIÓN RESEÑAS Y OPINIONES -->
-  <section style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-    <h3>Opiniones y Calificaciones</h3>
+@if (!pelicula()) {
+  <section class="tarjeta">
+    <h1 class="titulo-seccion">No encontramos la película</h1>
+    <button type="button" class="boton boton--primario" (click)="volver()">Volver a la cartelera</button>
+  </section>
+} @else if (ticketEmitido(); as ticket) {
+  <section class="tarjeta">
+    <h1 class="titulo-seccion">¡Compra confirmada!</h1>
+    <p class="texto-suave">
+      Mostrá este código en la boletería. El mismo QR sirve para la entrada y para retirar el candy bar.
+    </p>
 
-    <!-- Formulario para agregar opinión -->
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #eee;">
-      <h4 style="margin-top: 0; margin-bottom: 10px;">Dejá tu reseña</h4>
-      <div style="margin-bottom: 10px;">
-        <label style="font-weight: bold; margin-right: 10px;">Puntuación:</label>
-        <select [(ngModel)]="nuevaCalificacion" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-          <option [value]="5">⭐⭐⭐⭐⭐ (5/5)</option>
-          <option [value]="4">⭐⭐⭐⭐ (4/5)</option>
-          <option [value]="3">⭐⭐⭐ (3/5)</option>
-          <option [value]="2">⭐⭐ (2/5)</option>
-          <option [value]="1">⭐ (1/5)</option>
-        </select>
-      </div>
-      <div style="margin-bottom: 10px;">
-        <textarea 
-          [(ngModel)]="nuevoComentario" 
-          placeholder="Escribí un comentario corto sobre la película..." 
-          rows="2" 
-          style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
-      </div>
-      <button 
-        (click)="guardarResena()" 
-        style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-        Publicar Opinión
-      </button>
+    <div class="ticket">
+      <div class="ticket__qr">
+      <app-qr-code [valor]="ticket.codigoQr" />
+      <p class="ticket__codigo"><code>{{ ticket.codigoQr }}</code></p>
+    </div>
+      <dl class="ticket__datos">
+        <div><dt>Película</dt><dd>{{ ticket.peliculaNombre }}</dd></div>
+        <div><dt>Butacas</dt><dd>
+          @for (butaca of ticket.butacas; track butaca.etiqueta) {
+            <span class="chip">{{ butaca.etiqueta }} ({{ butaca.tipo }})</span>
+          }
+        </dd></div>
+        <div><dt>Sala</dt><dd>{{ ticket.salaId ? 'Sala ' + ticket.salaId : '—' }}</dd></div>
+        <div><dt>Función</dt><dd>{{ ticket.frecuencia }}</dd></div>
+        <div><dt>Próxima proyección</dt><dd>{{ fechaLegible(ticket.fechaHoraFuncion) }}</dd></div>
+        <div><dt>Total</dt><dd>{{ formatear(ticket.montoTotal) }}</dd></div>
+        <div><dt>Puntos ganados</dt><dd>{{ ticket.puntosGanados }}</dd></div>
+        @if (ticket.requiereAcompanante) {
+          <div><dt>Aviso</dt><dd class="ticket__aviso">Debe ingresar acompañado por un adulto.</dd></div>
+        }
+      </dl>
     </div>
 
-    <!-- Listado de comentarios -->
-    <div style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
-      <div *ngFor="let res of resenas" style="border-bottom: 1px solid #eee; padding-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong>{{ res.usuario }}</strong>
-          <span style="color: #f39c12; font-weight: bold;">{{ '★'.repeat(res.estrellas) }} ({{ res.estrellas }}/5)</span>
-        </div>
-        <p style="margin: 3px 0 0 0; color: #555; font-size: 14px;">{{ res.comentario }}</p>
+    <div class="acciones">
+      <a class="boton boton--primario" routerLink="/home">Volver a la cartelera</a>
+      @if (auth.estaLogueado()) {
+        <a class="boton boton--fantasma" routerLink="/perfil">Ver mis entradas</a>
+      }
+    </div>
+  </section>
+} @else {
+  <section class="compra">
+    <header class="compra__cabecera">
+      <div>
+        <h1 class="titulo-seccion">{{ pelicula()!.nombre }}</h1>
+        <p class="texto-suave">
+          {{ pelicula()!.duracionMinutos }} min · {{ pelicula()!.formato }} ·
+          {{ pelicula()!.clasificacionEdad === 0 ? 'Sin restricción' : '+' + pelicula()!.clasificacionEdad }}
+          @if (requiereAcompanante()) {
+            · debe ingresar con un adulto
+          }
+        </p>
       </div>
+      <ol class="pasos">
+        <li [class.pasos__activo]="paso() === 'butacas'">1. Butacas</li>
+        <li [class.pasos__activo]="paso() === 'candy'">2. Candy y combos</li>
+        <li [class.pasos__activo]="paso() === 'confirmar'">3. Confirmar</li>
+      </ol>
+    </header>
 
-      <p *ngIf="resenas.length === 0" style="color: #777; font-style: italic; text-align: center; margin: 10px 0;">
-        Todavía no hay comentarios sobre esta película. ¡Sé el primero en opinar!
+    @if (!puedeComprar().exito) {
+      <p class="alerta alerta--error">
+        {{ bloqueoEdad() }}
+        <a routerLink="/login">Iniciá sesión</a> o <a routerLink="/registro">registrate</a>.
       </p>
-    </div>
-  </section>
+    }
 
-  <!-- 1. SELECCIONA LA FUNCIÓN -->
-  <section style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h3>1. Selecciona la Función</h3>
-    <div *ngIf="funcionesDisponibles.length === 0" style="color: #721c24; background: #f8d7da; padding: 10px; border-radius: 4px;">
-      No hay funciones programadas para esta película todavía. Asigna funciones desde el panel de Admin.
-    </div>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <button *ngFor="let f of funcionesDisponibles" 
-              (click)="seleccionarFuncion(f)" 
-              [style.background]="funcionSeleccionada?.id === f.id ? '#0056b3' : '#e0e0e0'"
-              [style.color]="funcionSeleccionada?.id === f.id ? 'white' : 'black'"
-              style="padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; text-align: left;">
+    @if (paso() === 'butacas') {
+      <div class="compra__grid">
         <div>
-          <strong>Sala {{ f.salaId }}</strong> 
-          <span style="background: #ffc107; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 12px; margin-left: 5px;">{{ f.formato }}</span>
-          <span style="background: #17a2b8; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 12px; margin-left: 3px;">{{ f.idioma }}</span>
+          @if (funciones().length > 0) {
+            <h2>Elegí la función</h2>
+            <ul class="lista-funciones">
+              @for (opcion of funciones(); track opcion.funcion.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="opcion"
+                    [class.opcion--activa]="funcion()?.id === opcion.funcion.id"
+                    (click)="cambiarFuncion(opcion.funcion.id)"
+                  >
+                    <strong>{{ fechaLegible(opcion.fecha.toISOString()) }}</strong>
+                    <span>
+                      Sala {{ opcion.funcion.salaId }} · {{ opcion.funcion.dias.join(', ') }} ·
+                      {{ opcion.funcion.horaInicio }}hs
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="alerta">Esta película todavía no tiene funciones cargadas.</p>
+          }
         </div>
-        <div style="font-size: 13px; margin-top: 4px;">
-          {{ f.dias ? f.dias.join(', ') : '' }} a las {{ f.horaInicio }}hs (${{ f.precio }})
+
+        <div>
+          @if (sala(); as sala) {
+            <h2>Elegí tus butacas · {{ totalButacasSala() }} disponibles</h2>
+            <app-mapa-butacas
+              [sala]="sala"
+              [funcionId]="funcion()!.id"
+              [bloqueadas]="cine.butacasBloqueadas(funcion()!.id)"
+              [seleccion]="seleccion()"
+              (seleccionChange)="seleccion.set($event)"
+            />
+          }
         </div>
-      </button>
-    </div>
-  </section>
-
-  <!-- 2. SELECCIONA TUS BUTACAS -->
-  <section *ngIf="funcionSeleccionada" style="background: #fff; border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h3>2. Selecciona tus Butacas (Sala {{ funcionSeleccionada.salaId }})</h3>
-    <app-mapa-butacas (butacasChange)="onButacasChange($event)"></app-mapa-butacas>
-  </section>
-
-  <!-- 3. COMBOS ESPECIALES DESTACADOS (Requerimiento 03/03) -->
-  <section *ngIf="funcionSeleccionada && combosEspecialesDisponibles.length > 0" style="background: #fff8e1; border: 2px dashed #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h3 style="color: #b78103; margin-top: 0;"> Combos Especiales Destacados </h3>
-    <div *ngFor="let item of combosSeleccionados; let i = index" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #ffeeba;">
-      <div>
-        <strong style="color: #333;">{{ item.combo.nombre }}</strong><br>
-        <small style="color: #666;">{{ item.combo.descripcion }} - <strong style="color: #28a745;">${{ item.combo.precio }}</strong></small>
-      </div>
-      <div>
-        <button (click)="modificarCantidadCombo(i, -1)" style="padding: 2px 8px;">-</button>
-        <span style="margin: 0 10px; font-weight: bold;">{{ item.cantidad }}</span>
-        <button (click)="modificarCantidadCombo(i, 1)" style="padding: 2px 8px;">+</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 4. COMBO CANDY BAR Y CUPÓN -->
-  <section *ngIf="funcionSeleccionada" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h3>4. Productos Candy Bar (Individuales)</h3>
-    <div *ngFor="let item of productosSeleccionados; let i = index" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span>{{ item.producto.nombre }} - ${{ item.producto.precio }}</span>
-      <div>
-        <button (click)="modificarCantidadCandy(i, -1)" style="padding: 2px 8px;">-</button>
-        <span style="margin: 0 10px;">{{ item.cantidad }}</span>
-        <button (click)="modificarCantidadCandy(i, 1)" style="padding: 2px 8px;">+</button>
-      </div>
-    </div>
-
-    <hr style="margin: 15px 0;">
-
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <input type="text" [(ngModel)]="codigoCupon" placeholder="Código de Cupón" style="padding: 8px;" />
-      <button (click)="aplicarCupon()" style="padding: 8px 15px; background: #17a2b8; color: white; border: none; cursor: pointer;">Aplicar Cupón</button>
-    </div>
-    <p *ngIf="descuentoAplicado > 0" style="color: green; font-weight: bold; margin-top: 5px;">¡Descuento del {{ descuentoAplicado }}% aplicado!</p>
-  </section>
-
-  <!-- TOTAL Y PAGO -->
-  <section *ngIf="funcionSeleccionada" style="background: #eef6ff; padding: 15px; border-radius: 8px; text-align: right;">
-    <h4>Total a pagar: ${{ calcularTotal() }}</h4>
-    <button (click)="finalizarCompra()" style="padding: 12px 25px; background: #28a745; color: white; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
-      Pagar y Generar QR
-    </button>
-  </section>
-
-  <!-- MODAL COMPRA FINALIZADA -->
-  <div *ngIf="compraFinalizada" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:8px; max-width:400px; text-align:center;">
-      <h3 style="color:green;">¡Compra Confirmada!</h3>
-      <p><strong>Película:</strong> {{ pelicula.nombre }}</p>
-      <p><strong>Total Pagado:</strong> ${{ calcularTotal() }}</p>
-
-      <div style="margin: 20px 0; border: 2px dashed #333; padding: 20px;">
-        <p style="margin:0; font-size:12px; color:#666;">CÓDIGO QR / ENTRADA</p>
-        <h2 style="letter-spacing: 2px; margin: 10px 0;">{{ codigoQrGenerado }}</h2>
       </div>
 
-      <button (click)="volverAHome()" style="padding:10px 20px; background:#007bff; color:white; border:none; cursor:pointer;">Volver al Inicio</button>
-    </div>
-  </div>
-</div>
+      <div class="acciones">
+        <button type="button" class="boton boton--primario" (click)="irAlSiguientePaso()">Continuar</button>
+      </div>
+    }
+
+    @if (paso() === 'candy') {
+      <h2>Candy bar</h2>
+      <ul class="grilla-productos">
+        @for (producto of productos(); track producto.id) {
+          <li>
+            <img [src]="producto.imagenUrl" [alt]="producto.nombre" />
+            <strong>{{ producto.nombre }}</strong>
+            <span>{{ formatear(producto.precio) }}</span>
+            <div class="contador">
+              <button type="button" (click)="ajustarCandy(producto.id, -1)">−</button>
+              <span>{{ cantidadCandy(producto.id) }}</span>
+              <button type="button" (click)="ajustarCandy(producto.id, 1)">+</button>
+            </div>
+          </li>
+        }
+      </ul>
+
+      @if (combosDisponibles().length > 0) {
+        <h2>Combos especiales</h2>
+        <ul class="grilla-combos">
+          @for (combo of combosDisponibles(); track combo.id) {
+            <li class="combo">
+              <h3>{{ combo.nombre }}</h3>
+              <p>{{ combo.descripcion }}</p>
+              <strong>{{ formatear(combo.precio) }}</strong>
+              <div class="contador">
+                <button type="button" (click)="ajustarCombo(combo.id, -1)">−</button>
+                <span>{{ cantidadCombo(combo.id) }}</span>
+                <button type="button" (click)="ajustarCombo(combo.id, 1)">+</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="acciones">
+        <button type="button" class="boton boton--fantasma" (click)="volverAlPaso('butacas')">Volver</button>
+        <button type="button" class="boton boton--primario" (click)="irAlSiguientePaso()">Revisar compra</button>
+      </div>
+    }
+
+    @if (paso() === 'confirmar' && cotizacion(); as cotizacion) {
+      <div class="compra__grid">
+        <div>
+          <h2>Detalle</h2>
+          <ul class="lista-detalle">
+            @for (butaca of seleccion(); track butaca.id) {
+              <li>
+                <span>Butaca {{ butaca.fila }}{{ butaca.numero }}</span>
+                <strong>{{ formatear(precioButaca(butaca.fila, butaca.numero)) }}</strong>
+              </li>
+            }
+            @for (linea of candyElegido(); track linea.producto.id) {
+              <li>
+                <span>{{ linea.producto.nombre }} × {{ linea.cantidad }}</span>
+                <strong>{{ formatear(linea.producto.precio * linea.cantidad) }}</strong>
+              </li>
+            }
+            @for (linea of combosElegidos(); track linea.combo.id) {
+              <li>
+                <span>{{ linea.combo.nombre }} × {{ linea.cantidad }}</span>
+                <strong>{{ formatear(linea.combo.precio * linea.cantidad) }}</strong>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div>
+          <h2>Total</h2>
+          <dl class="resumen">
+            <div><dt>Subtotal butacas</dt><dd>{{ formatear(cotizacion.subtotalButacas) }}</dd></div>
+            <div><dt>Subtotal candy</dt><dd>{{ formatear(cotizacion.subtotalCandy) }}</dd></div>
+            <div><dt>Subtotal combos</dt><dd>{{ formatear(cotizacion.subtotalCombos) }}</dd></div>
+            @if (cotizacion.descuento > 0) {
+              <div class="resumen__descuento">
+                <dt>Descuento {{ cupon()?.porcentajeDescuento }}% ({{ cupon()?.codigo }})</dt>
+                <dd>−{{ formatear(cotizacion.descuento) }}</dd>
+              </div>
+            }
+            @if (cotizacion.creditoUtilizado > 0) {
+              <div class="resumen__descuento">
+                <dt>Crédito utilizado</dt>
+                <dd>−{{ formatear(cotizacion.creditoUtilizado) }}</dd>
+              </div>
+            }
+            <div class="resumen__total"><dt>Total</dt><dd>{{ formatear(cotizacion.total) }}</dd></div>
+          </dl>
+
+          <div class="cupon">
+            <label class="campo">
+              <span>Cupón de descuento</span>
+              <input
+                type="text"
+                [value]="cupon()?.codigo ?? codigoCupon()"
+                (input)="codigoCupon.set($any($event.target).value)"
+                placeholder="Código"
+              />
+            </label>
+            <button type="button" class="boton boton--fantasma" (click)="aplicarCupon(codigoCupon())">
+              Aplicar
+            </button>
+            @if (cupon()) {
+              <button type="button" class="boton boton--fantasma" (click)="quitarCupon()">Quitar</button>
+            }
+          </div>
+
+          @if (auth.estaLogueado() && creditoDisponible() > 0) {
+            <label class="interruptor">
+              <input type="checkbox" [checked]="usarCredito()" (change)="usarCredito.set($any($event.target).checked)" />
+              Usar mi crédito ({{ formatear(creditoDisponible()) }})
+            </label>
+          }
+
+          @if (esAnonima()) {
+            <p class="texto-suave">
+              Estás comprando sin sesión. Podés hacerlo igual, pero el cupón de primera compra y los
+              puntos requieren <a routerLink="/registro">registrarte</a>.
+            </p>
+          } @else {
+            <p class="texto-suave">Esta compra te suma {{ puntosGanara() }} puntos de fidelización.</p>
+          }
+
+          <div class="acciones">
+            <button type="button" class="boton boton--fantasma" (click)="volverAlPaso('candy')">Volver</button>
+            <button type="button" class="boton boton--primario" [disabled]="procesando()" (click)="confirmar()">
+              {{ procesando() ? 'Procesando…' : 'Confirmar compra' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+}

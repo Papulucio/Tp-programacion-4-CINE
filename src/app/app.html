@@ -1,6 +1,73 @@
-<nav style="padding: 15px; background-color: #1a1a1a; color: white; display: flex; gap: 20px;">
-  <a routerLink="/home" style="color: white; text-decoration: none;">🏠 Inicio</a>
-  <a routerLink="/registro" style="color: white; text-decoration: none;">📝 Registrarse</a>
-</nav>
+<header class="barra">
+  <div class="barra__contenido">
+    <a routerLink="/home" class="marca">
+      <span class="marca__icono" aria-hidden="true">C</span>
+      <span>
+        <strong>Cine</strong>
+        <small>TP Programación IV</small>
+      </span>
+    </a>
 
-<router-outlet></router-outlet>
+    <nav class="menu">
+      <a routerLink="/home" routerLinkActive="activo">Cartelera</a>
+
+      @if (auth.estaLogueado()) {
+        <a routerLink="/perfil" routerLinkActive="activo">Mis entradas</a>
+      }
+
+      @if (auth.esAdmin()) {
+        <a routerLink="/admin" routerLinkActive="activo">Administración</a>
+      }
+
+      @if (auth.esAdmin() || auth.esEmpleado()) {
+        <a routerLink="/empleado" routerLinkActive="activo">Validar entradas</a>
+      }
+    </nav>
+
+    <div class="sesion">
+      @if (cantidadAlertas() > 0) {
+        <span class="insignia" [title]="'Tenés ' + cantidadAlertas() + ' alertas de estreno'">
+          {{ cantidadAlertas() }} {{ cantidadAlertas() === 1 ? 'alerta' : 'alertas' }}
+        </span>
+      }
+
+      @if (auth.estaLogueado()) {
+        <span class="usuario">
+          {{ auth.nombreUsuario() }}
+          <small>{{ auth.sesionActual()?.rol }}</small>
+        </span>
+        <button type="button" class="boton boton--fantasma" (click)="cerrarSesion()">Salir</button>
+      } @else {
+        <a routerLink="/login" class="boton boton--primario">Ingresar</a>
+      }
+    </div>
+  </div>
+
+  @if (alertas().length > 0) {
+    <div class="barra__alertas">
+      <strong>Próximamente:</strong>
+      @for (pelicula of alertas(); track pelicula.id) {
+        <span class="chip chip--alerta">
+          {{ pelicula.nombre }}
+          @if (pelicula.fechaEstreno) {
+            · estreno {{ pelicula.fechaEstreno }}
+          }
+          @if (pelicula.preventaAbierta) {
+            · preventa abierta
+          } @else if (pelicula.faltanDias !== null) {
+            · preventa en {{ pelicula.faltanDias }} día(s)
+          }
+        </span>
+      }
+    </div>
+  }
+</header>
+
+<main class="contenido">
+  <router-outlet />
+</main>
+
+<footer class="pie">
+  <span>© {{ anio }} Cine · Trabajo práctico de Programación IV</span>
+  <span>Aplicación instalable (PWA) con persistencia local y sincronización en Supabase.</span>
+</footer>

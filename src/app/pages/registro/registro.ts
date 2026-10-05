@@ -1,45 +1,58 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { calcularEdad } from '../../core/utils/fecha.util';
 
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './registro.html',
-  styleUrl: './registro.css'
 })
 export class RegistroComponent {
-  registroForm: FormGroup;
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
-  tiposSangre = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  coloresOjos = ['Marrón', 'Azul', 'Verde', 'Miel', 'Negro'];
+  readonly tiposSangre = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  readonly coloresOjos = ['Marrón', 'Azul', 'Verde', 'Miel', 'Negro'];
 
-  constructor(private fb: FormBuilder, private router: Router) {
-    this.registroForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      nombre: ['', [Validators.required]],
-      apellido: ['', [Validators.required]],
-      fechaNacimiento: ['', [Validators.required]],
-      tipoSangre: ['', [Validators.required]],
-      colorOjos: ['', [Validators.required]],
-      diasVacaciones: [0, [Validators.required, Validators.min(0)]]
-    });
+  readonly formulario = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    nombre: ['', [Validators.required, Validators.minLength(2)]],
+    apellido: ['', [Validators.required, Validators.minLength(2)]],
+    fechaNacimiento: ['', [Validators.required]],
+    tipoSangre: ['', [Validators.required]],
+    colorOjos: ['', [Validators.required]],
+    diasVacaciones: [0, [Validators.required, Validators.min(0), Validators.max(365)]],
+  });
+
+  mensaje = '';
+  error = '';
+
+  /** Edad calculada en vivo: sirve para explicar el bloqueo por clasificación. */
+  get edad(): number {
+    return calcularEdad(this.formulario.controls.fechaNacimiento.value);
   }
 
-  registrarUsuario() {
-    if (this.registroForm.valid) {
-      const usuarioNuevo = {
-        ...this.registroForm.value,
-        esRegistrado: true,
-        tieneCuponPrimeraCompra: true 
-      };
-      
-      localStorage.setItem('usuario_activo', JSON.stringify(usuarioNuevo));
-      alert('¡Registro exitoso! Haz obtenido un cupón de 20% de descuento para tu primera compra.');
-      this.router.navigate(['/home']);
-    } else {
-      this.registroForm.markAllAsTouched();
+  registrar(): void {
+    this.mensaje = '';
+    this.error = '';
+
+    if (this.formulario.invalid) {
+      this.formulario.markAllAsTouched();
+      this.error = 'Revisá los campos marcados.';
+      return;
     }
+
+    const resultado = this.auth.registrar(this.formulario.getRawValue());
+    if (!resultado.exito) {
+      this.error = resultado.mensaje;
+      return;
+    }
+
+    this.mensaje = resultado.mensaje;
+    void this.router.navigate(['/perfil']);
   }
 }

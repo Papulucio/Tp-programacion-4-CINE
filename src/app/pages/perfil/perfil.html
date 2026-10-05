@@ -1,110 +1,158 @@
-<div style="padding: 20px; max-width: 800px; margin: 0 auto; font-family: sans-serif;">
-  <h2>Mi Perfil</h2>
-  
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px; border-radius: 12px;">
-      <h3 style="margin: 0; font-size: 1.2em; opacity: 0.9;">Puntos Acumulados</h3>
-      <p style="font-size: 2.5em; font-weight: bold; margin: 10px 0 0 0;">{{ puntos }} <span style="font-size: 0.4em;">pts</span></p>
+@if (error()) {
+  <p class="alerta alerta--error">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p class="alerta alerta--ok">{{ mensaje() }}</p>
+}
+
+@if (usuario(); as usuario) {
+  <section class="panel">
+    <div>
+      <h1 class="titulo-seccion">{{ usuario.nombre }} {{ usuario.apellido }}</h1>
+      <p class="texto-suave">{{ usuario.email }} · Rol: {{ usuario.rol }}</p>
+    </div>
+    <dl class="datos-usuario">
+      <div><dt>Fecha de nacimiento</dt><dd>{{ usuario.fechaNacimiento }}</dd></div>
+      <div><dt>Tipo de sangre</dt><dd>{{ usuario.tipoSangre }}</dd></div>
+      <div><dt>Color de ojos</dt><dd>{{ usuario.colorOjos }}</dd></div>
+      <div><dt>Días de vacaciones</dt><dd>{{ usuario.diasVacaciones }}</dd></div>
+      <div><dt>Puntos</dt><dd>{{ puntos() }}</dd></div>
+      <div><dt>Crédito</dt><dd>{{ formatear(credito()) }}</dd></div>
+      <div><dt>Total gastado</dt><dd>{{ formatear(totalGastado()) }}</dd></div>
+      <div><dt>Cupón de primera compra</dt><dd>{{ auth.tieneCuponPrimeraCompra ? 'Disponible' : 'Ya utilizado' }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="bloque">
+    <h2>Alertas de estreno</h2>
+    @if (proximosEstrenos().length === 0) {
+      <p class="texto-suave">No tenés alertas activas. Marcá "Avisarme" en una película de >>>Próximamente.</p>
+    } @else {
+      <ul class="chips-peliculas">
+        @for (pelicula of proximosEstrenos(); track pelicula.id) {
+          <li class="chip chip--pelicula">
+            {{ pelicula.nombre }}
+            @if (pelicula.fechaEstreno) {
+              · estreno {{ pelicula.fechaEstreno }}
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="bloque">
+    <h2>Catálogo de canje</h2>
+    <p class="texto-suave">Por cada peso gastado sumás 1 punto. Las entradas canjeadas también generan QR.</p>
+    <div class="grilla-recompensas">
+      @for (recompensa of recompensas(); track recompensa.id) {
+        <article class="recompensa">
+          <h3>{{ recompensa.nombre }}</h3>
+          <p>{{ recompensa.puntosRequeridos }} puntos · {{ recompensa.tipo === 'entrada' ? 'Entrada' : 'Candy' }}</p>
+          <button
+            type="button"
+            class="boton boton--primario"
+            [disabled]="!recompensa.activa || puntos() < recompensa.puntosRequeridos"
+            (click)="canjear(recompensa.id)"
+          >
+            {{ puntos() >= recompensa.puntosRequeridos ? 'Canjear' : 'Te faltan ' + (recompensa.puntosRequeridos - puntos()) }}
+          </button>
+        </article>
+      }
     </div>
 
-    <div style="background: linear-gradient(135deg, #2b5876, #4e4376); color: white; padding: 20px; border-radius: 12px;">
-      <h3 style="margin: 0; font-size: 1.2em; opacity: 0.9;">Crédito Disponible</h3>
-      <p style="font-size: 2.5em; font-weight: bold; margin: 10px 0 0 0;">${{ credito }}</p>
+    @if (canjes().length > 0) {
+      <h3>Historial de canjes</h3>
+      <table class="tabla">
+        <thead>
+          <tr><th>Fecha</th><th>Recompensa</th><th>Puntos</th><th>Código</th></tr>
+        </thead>
+        <tbody>
+          @for (canje of canjes(); track canje.id) {
+            <tr>
+              <td>{{ fecha(canje.fecha) }}</td>
+              <td>{{ canje.recompensaNombre }}</td>
+              <td>{{ canje.puntosUtilizados }}</td>
+              <td><code>{{ canje.codigoTicket }}</code></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section class="bloque">
+    <h2>Mis entradas</h2>
+    @if (tickets().length === 0) {
+      <p class="texto-suave">Todavía no compraste entradas. <a routerLink="/home">Ver cartelera</a>.</p>
+    } @else {
+      <div class="grilla-tickets">
+        @for (ticket of tickets(); track ticket.id) {
+          <article class="entrada" [class.entrada--cancelada]="ticket.estado === 'CANCELADO'">
+            <header>
+              <strong>{{ ticket.peliculaNombre }}</strong>
+              <span class="chip" [class.chip--alerta]="ticket.estado === 'CANCELADO'">{{ ticket.estado }}</span>
+            </header>
+            <p class="texto-suave">{{ ticket.frecuencia }} · Sala {{ ticket.salaId || '—' }}</p>
+            <p class="texto-suave">Función: {{ fecha(ticket.fechaHoraFuncion) }}</p>
+            <p class="texto-suave">{{ horasRestantes(ticket) }}</p>
+            <p><code>{{ ticket.codigoQr }}</code></p>
+            <p>
+              @for (butaca of ticket.butacas; track butaca.etiqueta) {
+                <span class="chip">{{ butaca.etiqueta }}</span>
+              }
+            </p>
+            @if (ticket.requiereAcompanante) {
+              <p class="alerta">Debe ingresar acompañado por un adulto.</p>
+            }
+            <p>
+              <strong>{{ formatear(ticket.montoTotal) }}</strong>
+              @if (ticket.descuentoAplicado > 0) {
+                <span class="texto-suave">(ahorro {{ formatear(ticket.descuentoAplicado) }})</span>
+              }
+            </p>
+            <div class="acciones">
+              <button type="button" class="boton boton--fantasma" (click)="verTicket(ticket)">Ver ticket</button>
+              <button type="button" class="boton boton--fantasma" (click)="descargarTicket(ticket)">Descargar PDF</button>
+              @if (puedeCancelar(ticket)) {
+                <button type="button" class="boton boton--peligro" (click)="cancelar(ticket)">Cancelar</button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+      <p class="texto-suave">
+        Podés cancelar {{ ticketsCancelables().length }} de tus entradas. La cancelación se acredita en tu
+        cuenta y no devuelve dinero ({{ formatear(credito()) }} disponibles).
+      </p>
+    }
+  </section>
+}
+
+@if (ticketAmpliado(); as ticket) {
+  <div class="modal" (click)="cerrarTicket()">
+    <div class="modal__caja" (click)="$event.stopPropagation()">
+      <button type="button" class="modal__cerrar" (click)="cerrarTicket()">×</button>
+      <h2>{{ ticket.peliculaNombre }}</h2>
+      <div class="ticket__qr">
+        <app-qr-code [valor]="ticket.codigoQr" [tamanio]="160" />
+        <p class="ticket__codigo"><code>{{ ticket.codigoQr }}</code></p>
+      </div>
+      <dl class="ticket__datos">
+        <div><dt>Función</dt><dd>{{ ticket.frecuencia }}</dd></div>
+        <div><dt>Fecha</dt><dd>{{ fecha(ticket.fechaHoraFuncion) }}</dd></div>
+        <div><dt>Total</dt><dd>{{ formatear(ticket.montoTotal) }}</dd></div>
+        @if (ticket.productosCandy.length > 0) {
+          <div>
+            <dt>Candy</dt>
+            <dd>
+              @for (linea of ticket.productosCandy; track linea.productoId) {
+                <span class="chip">{{ linea.nombre }} × {{ linea.cantidad }}</span>
+              }
+            </dd>
+          </div>
+        }
+      </dl>
     </div>
   </div>
-
-  <!-- MENSAJE DE ALERTA / NOTIFICACIÓN -->
-  <p *ngIf="mensaje" style="padding: 10px; background: #e2f0d9; border: 1px solid #b2d8b2; color: #2d572c; border-radius: 6px; margin-bottom: 20px;">
-    {{ mensaje }}
-  </p>
-
-  <!-- NUEVA SECCIÓN: MIS PELÍCULAS -->
-  <section style="margin-bottom: 30px;">
-    <h3>Mis Películas Vistas / Reservadas</h3>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <div *ngFor="let pelicula of misPeliculas" style="background: #f8f9fa; border: 1px solid #ced4da; padding: 10px 15px; border-radius: 20px; font-weight: 500; color: #333;">
-        🎬 {{ pelicula }}
-      </div>
-      <p *ngIf="misPeliculas.length === 0" style="color: #777; margin: 0;">No registras películas asociadas.</p>
-    </div>
-  </section>
-
-  <!-- SECCIÓN DE MIS RESERVAS -->
-  <section style="margin-bottom: 30px;">
-    <h3>Mis Reservas</h3>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      <div *ngFor="let t of misTickets" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <div>
-          <h4 style="margin: 0 0 5px 0;">{{ t.peliculaNombre }}</h4>
-          <p style="margin: 0; font-size: 0.9em; color: #555;"><strong>Función:</strong> {{ t.frecuencia }}</p>
-          <p style="margin: 3px 0 0 0; font-size: 0.9em; color: #555;"><strong>Monto:</strong> ${{ t.montoTotal }}</p>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <button 
-            *ngIf="t.estado === 'ACTIVO'"
-            (click)="descargarPDF(t)" 
-            style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            Descargar PDF
-          </button>
-
-          <span *ngIf="t.estado === 'CANCELADO'" style="padding: 6px 12px; background: #f8d7da; color: #721c24; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
-            CANCELADO
-          </span>
-
-          <button 
-            *ngIf="t.estado === 'ACTIVO'"
-            (click)="cancelarReserva(t.id)" 
-            style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            Cancelar Reserva
-          </button>
-        </div>
-      </div>
-
-      <!-- MENSAJE SI NO HAY TICKETS -->
-      <p *ngIf="misTickets.length === 0" style="color: #777; text-align: center; padding: 10px;">
-        No tenés entradas o reservas activas.
-      </p>
-    </div>
-  </section>
-
-  <!-- CANJE DE RECOMPENSAS -->
-  <section style="margin-bottom: 30px;">
-    <h3>Canjear Recompensas</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;">
-      <div *ngFor="let rec of recompensas" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff; text-align: center;">
-        <h4 style="margin: 0 0 10px 0;">{{ rec.nombre }}</h4>
-        <p style="font-weight: bold; color: #2a5298;">{{ rec.puntosRequeridos }} Puntos</p>
-        <button 
-          (click)="canjear(rec.id)" 
-          [disabled]="puntos < rec.puntosRequeridos"
-          style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-          Canjear
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- HISTORIAL DE CANJES -->
-  <section>
-    <h3>Historial de Canjes</h3>
-    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
-      <thead>
-        <tr style="background: #f4f4f4;">
-          <th style="padding: 8px;">Recompensa</th>
-          <th style="padding: 8px;">Puntos Usados</th>
-          <th style="padding: 8px;">Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of historial">
-          <td style="padding: 8px;">{{ c.recompensaNombre }}</td>
-          <td style="padding: 8px;">-{{ c.puntosUtilizados }} pts</td>
-          <td style="padding: 8px;">{{ c.fecha }}</td>
-        </tr>
-        <tr *ngIf="historial.length === 0">
-          <td colspan="3" style="padding: 12px; text-align: center; color: #777;">No realizaste ningún canje todavía.</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-</div>
+}

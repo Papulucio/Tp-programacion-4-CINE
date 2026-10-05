@@ -1,1 +1,60 @@
-<p>pelicula-card works!</p>
+<article class="card-pelicula" [class.card-pelicula--preventa]="enPreventa()">
+  <img class="card-pelicula__poster" [src]="pelicula().imagenUrl" [alt]="'Cartel de ' + pelicula().nombre" />
+
+  <div class="card-pelicula__cuerpo">
+    <div class="card-pelicula__titulos">
+      <h3>{{ pelicula().nombre }}</h3>
+      <span class="etiqueta" [class.etiqueta--vip]="pelicula().formato !== '2D'">
+        {{ pelicula().formato }} · {{ pelicula().idioma }}
+      </span>
+    </div>
+
+    <p class="card-pelicula__meta">
+      {{ pelicula().duracionMinutos }} min · {{ clasificacion(pelicula().clasificacionEdad) }}
+    </p>
+
+    <p class="card-pelicula__sinopsis">{{ pelicula().sinopsis }}</p>
+
+    <ul class="generos">
+      @for (genero of pelicula().generos; track genero) {
+        <li class="chip chip--genero">{{ genero }}</li>
+      }
+    </ul>
+
+    <p class="card-pelicula__precio">
+      @if (precioDesde() > 0) {
+        Desde <strong>{{ formatear(precioDesde()) }}</strong>
+      }
+      @if (enPreventa()) {
+        <span class="chip chip--alerta">Preventa abierta</span>
+      } @else if (diasParaPreventa() !== null) {
+        <span class="chip chip--preventa">Preventa en {{ diasParaPreventa() }} día(s)</span>
+      }
+    </p>
+
+    <div class="card-pelicula__acciones">
+      @if (pelicula().visibleEnCartelera && !pelicula().esProximamente) {
+        <a class="boton boton--primario" [routerLink]="['/compra', pelicula().id]">Comprar entradas</a>
+      } @else {
+        <span class="texto-suave">Próximamente</span>
+      }
+
+      @if (mostrarAlerta()) {
+        <button
+          type="button"
+          class="boton boton--fantasma"
+          (click)="alternarAlerta()"
+          [title]="tieneAlerta() ? 'Quitar alerta' : 'Avisarme del estreno'"
+        >
+          {{ tieneAlerta() ? '🔔 Alerta activa' : '🔕 Avisarme' }}
+        </button>
+      }
+
+      @if (mostrarControlAdmin()) {
+        <button type="button" class="boton boton--fantasma" (click)="alternarPeliculaVisible()">
+          {{ pelicula().visibleEnCartelera ? 'Sacar de cartelera' : 'Poner en cartelera' }}
+        </button>
+      }
+    </div>
+  </div>
+</article>

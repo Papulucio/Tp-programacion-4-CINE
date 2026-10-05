@@ -1,0 +1,39 @@
+<section class="tarjeta tarjeta--angosta">
+  <h1 class="titulo-seccion">Iniciar sesión</h1>
+  <p class="texto-suave">
+    La compra de entradas y el candy bar se pueden hacer sin cuenta, pero iniciar sesión habilita el
+    cupón de primera compra, los puntos por fidelización y el historial de entradas.
+  </p>
+
+  @if (error()) {
+    <p class="alerta alerta--error">{{ error() }}</p>
+  }
+
+  <form class="formulario" (ngSubmit)="entrar()">
+    <label class="campo">
+      <span>Email</span>
+      <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+    </label>
+
+    <label class="campo">
+      <span>Contraseña</span>
+      <input type="password" name="clave" [(ngModel)]="clave" autocomplete="current-password" required />
+    </label>
+
+    <button class="boton boton--primario" type="submit">Entrar</button>
+  </form>
+
+  <p class="texto-suave">¿Todavía no tenés cuenta? <a routerLink="/registro">Registrate acá</a>.</p>
+
+  <h2 class="subtitulo">Cuentas de demostración</h2>
+  <ul class="lista-demo">
+    @for (cuenta of cuentasDemo; track cuenta.email) {
+      <li>
+        <button type="button" class="boton boton--fantasma" (click)="usarCuenta(cuenta.email, cuenta.clave)">
+          <strong>{{ cuenta.etiqueta }}</strong>
+          <span>{{ cuenta.email }} / {{ cuenta.clave }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+</section>
